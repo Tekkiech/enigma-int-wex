@@ -1,42 +1,20 @@
 {
-    "name": "datatables.net-dt",
-    "description": "DataTables with styling for [DataTables](https://datatables.net/)",
-    "main": "js/dataTables.dataTables.js",
-    "module": "js/dataTables.dataTables.mjs",
-    "style": "css/dataTables.dataTables.css",
-    "types": "./types/dataTables.dataTables.d.ts",
-    "version": "3.0.4",
-    "scripts": {
+  "name": "task2-datatables",
+  "version": "1.0.0",
+  "private": true,
+  "license": "MIT",
+  "scripts": {
     "dev": "parcel src/index.html",
     "build": "parcel build src/index.html"
   },
-    "files": [
-        "css/**/*.css",
-        "js/**/*.js",
-        "js/**/*.mjs",
-        "types/**/*.d.ts"
-    ],
-    "keywords": [
-        "Datatables",
-        "table",
-        "filter",
-        "sort"
-    ],
-    "devDependencies": {
+  "devDependencies": {
     "parcel": "^2.6.2"
-    },
-    "dependencies": {
-        "datatables.net": "3.0.4"
-    },
-    "author": {
-        "name": "SpryMedia Ltd",
-        "url": "http://datatables.net"
-    },
-    "homepage": "https://datatables.net",
-    "bugs": "https://datatables.net/forums",
-    "license": "MIT",
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/DataTables/DataTablesSrc.git"
-    }
+  },
+  "dependencies": {
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/poppins": "^5.3.0",
+    "datatables.net-dt": "^2.1.8",
+    "datatables.net-responsive-dt": "^3.0.4",
+    "jquery": "^3.7.1"
+  }
 }
