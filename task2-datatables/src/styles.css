@@ -1,0 +1,37 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 24px;
+  background-color: #ffffff;
+}
+
+/* Base DataTables Styling */
+.styled-table {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.styled-table th, 
+.styled-table td {
+  border: 1px solid #1e293b !important;
+  padding: 8px 12px;
+  text-align: center;
+}
+
+.styled-table thead th {
+  background-color: #007373 !important;
+  color: #ffffff !important;
+  font-weight: bold;
+}
+
+/* Left-align text columns */
+.styled-table td:nth-child(1),
+.styled-table td:nth-child(2) {
+  text-align: left;
+}
+
+/* Highlighted cells for values >= 1.0 */
+td.green {
+  background-color: #5b9bd5 !important;
+  color: #ffffff !important;
+  font-weight: bold;
+}
