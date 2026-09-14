@@ -1,20 +1,56 @@
 <!doctype html>
 <html lang="en">
   <head>
-    <title>Tekkiech Chart.js</title>
+    <title>Chart.js</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Rubik:ital,wght@0,300..900;1,300..900&display=swap" rel="stylesheet">
+    <style>
+      * {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+      }
+      body {
+        font-family: 'Plus Jakarta Sans', sans-serif;
+        background-color: #0b0f19;
+        background-image: radial-gradient(at 0% 0%, rgba(191, 44, 44, 0.15) 0px, transparent 50%),
+                          radial-gradient(at 100% 100%, rgba(168, 43, 43, 0.15) 0px, transparent 50%);
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #f8fafc;
+      }
+      .chart-card {
+        width: 880px;
+        padding: 28px;
+        background: rgba(15, 23, 42, 0.65);
+        backdrop-filter: blur(16px);
+        -webkit-backdrop-filter: blur(16px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 20px;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), 
+                    0 0 80px rgba(191, 44, 44, 0.1);
+        transition: transform 0.3s ease, border-color 0.3s ease;
+      }
+      .chart-card:hover {
+        transform: translateY(-2px);
+        border-color: rgba(255, 255, 255, 0.18);
+      }
+      .chart-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        letter-spacing: -0.02em;
+        color: #f1f5f9;
+      }
+    </style>
   </head>
-  <body style="
-    background-image: url('magicpattern-87PP9Zd7MNo-unsplash.jpg');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed;
-    min-height: 100vh;
-    color: white;
-  ">
-    
-    <div style="width: 800px; margin: 40px auto;">
-        <canvas id="acquisitions"></canvas>
+  <body>
+    <div class="chart-card">
+      <div class="chart-title">Chart.js Interest over time</div>
+      <canvas id="acquisitions"></canvas>
     </div>
 
     <script type="module" src="acquisitions.js"></script>
