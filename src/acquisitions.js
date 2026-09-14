@@ -14,15 +14,50 @@ import Chart from 'chart.js/auto'
   new Chart(
     document.getElementById('acquisitions'),
     {
-      type: 'bar',
+      type: 'line',
       data: {
         labels: data.map(row => row.year),
         datasets: [
           {
             label: 'Acquisitions by year',
-            data: data.map(row => row.count)
+            data: data.map(row => row.count),
+            backgroundColor: "#ffffffff",
+            borderColor: "#ff99AF"
           }
         ]
+      },
+      options: {
+        plugins: {
+          legend: {
+            labels: {
+              color: '#ffffff' // Legend text colour
+            }
+          }
+        },
+        scales: {
+          x: {
+            border: {
+              color: '#ffffff' // X-axis main border line colour
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.2)' // X-axis gridlines colour
+            },
+            ticks: {
+              color: '#ffffff' // X-axis numbers/labels colour
+            }
+          },
+          y: {
+            border: {
+              color: '#ffffff' // Y-axis main border line colour
+            },
+            grid: {
+              color: 'rgba(255, 255, 255, 0.2)' // Y-axis gridlines colour
+            },
+            ticks: {
+              color: '#ffffff' // Y-axis numbers/labels colour
+            }
+          }
+        }
       }
     }
   );
