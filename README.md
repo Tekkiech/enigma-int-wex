@@ -6,8 +6,8 @@ Front-end tasks from a work experience placement at Enigma Interactive: two stan
 
 A [Chart.js](https://www.chartjs.org/) line chart comparing search interest in "Chart.js" against the general term "Chart" over time, styled as a dark, glassmorphic card with gradient-filled lines.
 
-- `src/` — current version, built with npm + Parcel, chart data pulled into `acquisitions.js`
-- `pre-npm/` — the earlier vanilla-JS attempt: a plain HTML page loading Chart.js from a CDN, rendering a bar chart of North East population figures by year
+- `src/` is the current version, built with npm + Parcel, chart data pulled into `acquisitions.js`
+- `pre-npm/` contains the earlier vanilla-JS attempt: a plain HTML page loading Chart.js from a CDN, rendering a bar chart of North East population figures by year
 
 ```bash
 cd task1-chartjs
