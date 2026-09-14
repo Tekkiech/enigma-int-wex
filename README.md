@@ -20,8 +20,8 @@ npm run build  # production build
 
 A [DataTables](https://datatables.net/) table showing Employment Location Quotient figures across North East local authorities, broken down by sector. Cells with a value of 1.0 or higher are highlighted so above-average concentrations stand out at a glance. Styled to sit alongside the [North East Evidence Hub](https://evidencehub.northeast-ca.gov.uk/) (black chrome, teal accent, Poppins/Inter), and responsive down to mobile via the DataTables Responsive extension — narrow screens collapse lower-priority columns behind an expandable row.
 
-- `src/index.html` / `src/script.js` — table markup and the DataTables init (jQuery, DataTables and the Responsive extension bundled through npm/Parcel, not CDN)
-- `src/styles.css` — the black/teal theme, houndstooth footer accent, and the mobile breakpoint
+- `src/index.html` / `src/script.js` contains the table markup and the DataTables init (jQuery, DataTables and the Responsive extension bundled through npm/Parcel)
+- `src/styles.css` contains the black/teal theme, footer accent, and the mobile breakpoint
 
 ```bash
 cd task2-datatables
