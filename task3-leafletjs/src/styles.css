@@ -1,0 +1,364 @@
+/*
+  Palette and font sampled from the live North East Evidence Hub
+  (evidencehub.northeast-ca.gov.uk): near-black chrome, a white/light-grey
+  body, Hanken Grotesk throughout, and a set of theme accent colours used
+  on the "Evidence by Theme" cards. Heat networks sit under the site's
+  "Net zero" theme, whose accent is the pink below; the teal, blue and
+  pink also double up as the operational / feasibility / planned status
+  colours used on the map markers.
+*/
+:root {
+  --neh-black: #231f20;
+  --neh-white: #ffffff;
+  --neh-bg: #f4f4f4;
+  --neh-border: #ddd9d6;
+  --neh-text: #1a1a1a;
+  --neh-text-muted: #57544e;
+
+  --neh-accent: #ed1163;   /* Net zero theme colour */
+  --neh-teal: #33a38c;     /* operational */
+  --neh-blue: #00478a;     /* feasibility study */
+
+  --font-body: 'Hanken Grotesk', 'Segoe UI', Arial, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-body);
+  background-color: var(--neh-bg);
+  color: var(--neh-text);
+}
+
+/* Header bar */
+.site-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background-color: var(--neh-black);
+  color: var(--neh-white);
+  padding: 14px 24px;
+}
+
+.site-bar__mark {
+  width: 18px;
+  height: 18px;
+  flex: none;
+  background-color: var(--neh-accent);
+  clip-path: polygon(0 0, 100% 0, 100% 65%, 45% 65%, 45% 100%, 0 100%);
+}
+
+.site-bar__label {
+  font-weight: 600;
+  font-size: 0.95rem;
+  letter-spacing: 0.02em;
+}
+
+/* Page layout */
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 32px 24px 56px;
+}
+
+.page__intro {
+  padding-bottom: 20px;
+  margin-bottom: 24px;
+  border-bottom: 3px solid var(--neh-accent);
+}
+
+.breadcrumb {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--neh-accent);
+}
+
+.page__intro h1 {
+  font-weight: 700;
+  font-size: clamp(1.4rem, 4vw, 2.1rem);
+  letter-spacing: -0.01em;
+  margin: 0 0 10px;
+  color: var(--neh-black);
+}
+
+.page__intro p {
+  margin: 0;
+  max-width: 70ch;
+  font-size: 0.95rem;
+  line-height: 1.55;
+  color: var(--neh-text-muted);
+}
+
+.page__outro {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--neh-border);
+}
+
+.page__outro h2 {
+  font-size: 1.05rem;
+  margin: 0 0 8px;
+  color: var(--neh-black);
+}
+
+.page__outro p {
+  margin: 0;
+  max-width: 78ch;
+  font-size: 0.88rem;
+  line-height: 1.6;
+  color: var(--neh-text-muted);
+}
+
+.page__outro code {
+  background: var(--neh-white);
+  border: 1px solid var(--neh-border);
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 0.85em;
+}
+
+/* Map layout: legend + map side by side on wide screens, stacked on narrow */
+.map-shell {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+  align-items: start;
+}
+
+.map-card {
+  position: relative;
+  background-color: var(--neh-white);
+  border: 1px solid var(--neh-border);
+  border-radius: 10px;
+  padding: 8px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+#map {
+  height: clamp(360px, 60vh, 640px);
+  width: 100%;
+  border-radius: 6px;
+  font-family: var(--font-body);
+}
+
+/* Mute the default OSM basemap so the brand-coloured markers stay dominant */
+#map .leaflet-tile-pane {
+  filter: grayscale(45%) brightness(1.08) contrast(0.92);
+}
+
+/* Legend / filter panel */
+.map-legend {
+  background-color: var(--neh-white);
+  border: 1px solid var(--neh-border);
+  border-radius: 10px;
+  padding: 4px 16px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.map-legend__summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.map-legend__summary::-webkit-details-marker {
+  display: none;
+}
+
+.map-legend__chevron {
+  width: 9px;
+  height: 9px;
+  border-right: 2px solid var(--neh-black);
+  border-bottom: 2px solid var(--neh-black);
+  transform: rotate(45deg);
+  transition: transform 0.15s ease;
+}
+
+.map-legend[open] .map-legend__chevron {
+  transform: rotate(-135deg);
+}
+
+.map-legend__body {
+  padding-bottom: 16px;
+}
+
+.map-legend__group {
+  border: 0;
+  margin: 0 0 16px;
+  padding: 0;
+}
+
+.map-legend__group legend {
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+  color: var(--neh-text-muted);
+  padding: 0 0 8px;
+}
+
+.map-legend__option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.map-legend__option input {
+  accent-color: var(--neh-accent);
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  flex: none;
+  border: 2px solid var(--neh-white);
+  box-shadow: 0 0 0 1px var(--neh-border);
+}
+
+.swatch--zone {
+  border-radius: 3px;
+  background: rgba(51, 163, 140, 0.18);
+  box-shadow: 0 0 0 1px var(--neh-teal);
+}
+
+/* ---- Leaflet element overrides ---- */
+
+.heat-marker__dot {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid var(--neh-white);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 8px;
+}
+
+.heat-popup {
+  font-family: var(--font-body);
+  min-width: 200px;
+}
+
+.heat-popup h3 {
+  margin: 6px 0 4px;
+  font-size: 0.98rem;
+  color: var(--neh-black);
+}
+
+.heat-popup p {
+  margin: 4px 0;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--neh-text);
+}
+
+.heat-popup__badge {
+  display: inline-block;
+  padding: 2px 9px;
+  border-radius: 999px; /* unslop-ignore: status tag shape, deliberate */
+  color: var(--neh-white);
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.heat-popup__meta {
+  color: var(--neh-text-muted) !important;
+  font-size: 0.8rem !important;
+}
+
+.heat-tooltip {
+  font-family: var(--font-body);
+  font-size: 0.8rem;
+}
+
+.leaflet-control-zoom a {
+  color: var(--neh-black) !important;
+}
+
+.leaflet-control-scale-line {
+  font-family: var(--font-body);
+  border-color: var(--neh-black) !important;
+  color: var(--neh-text) !important;
+}
+
+/* Touch-drag guard shown until a mobile visitor taps into the map */
+.map-touch-hint {
+  position: absolute;
+  inset: auto auto 16px 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  background: var(--neh-black);
+  color: var(--neh-white);
+  border: 0;
+  border-radius: 999px; /* unslop-ignore: floating action chip, deliberate */
+  padding: 9px 16px;
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  font-weight: 600;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.25);
+}
+
+/* Houndstooth-style accent strip, echoing the site's footer border */
+.site-footer {
+  height: 14px;
+  background-color: var(--neh-white);
+  background-image:
+    linear-gradient(45deg, var(--neh-black) 25%, transparent 25%, transparent 75%, var(--neh-black) 75%, var(--neh-black)),
+    linear-gradient(45deg, var(--neh-black) 25%, transparent 25%, transparent 75%, var(--neh-black) 75%, var(--neh-black));
+  background-size: 14px 14px;
+  background-position: 0 0, 7px 7px;
+}
+
+/* ---- Responsiveness ---- */
+
+@media (max-width: 899px) {
+  .map-shell {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .site-bar {
+    padding: 12px 16px;
+  }
+
+  .page {
+    padding: 20px 14px 40px;
+  }
+
+  .map-card {
+    padding: 6px;
+    border-radius: 8px;
+  }
+
+  #map {
+    height: clamp(320px, 55vh, 480px);
+  }
+
+  .map-legend {
+    padding: 2px 14px;
+  }
+}
