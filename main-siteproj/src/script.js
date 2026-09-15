@@ -62,6 +62,7 @@ function buildChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      layout: { padding: { top: 4, bottom: 8 } },
       interaction: { mode: 'index', intersect: false },
       scales: {
         x: {
@@ -78,7 +79,15 @@ function buildChart() {
         legend: {
           position: 'top',
           align: 'start',
-          labels: { color: cssVar('--text', '#ece9e3'), usePointStyle: true, pointStyle: 'circle', boxWidth: 8, padding: 16, font: { family: 'JetBrains Mono' } },
+          labels: {
+            color: cssVar('--text', '#ece9e3'),
+            usePointStyle: true,
+            pointStyle: 'circle',
+            boxWidth: 8,
+            boxHeight: 8,
+            padding: 24,
+            font: { family: 'JetBrains Mono', size: 12 },
+          },
         },
         tooltip: {
           callbacks: { label: (ctx) => ` ${ctx.dataset.label}: ${ctx.raw}%` },
@@ -129,6 +138,16 @@ function initMap() {
     // UMD export resolves directly, not wrapped with `default`.
     const L = leafletModule.default ?? leafletModule;
 
+    // The mount div was just injected via innerHTML above, so the browser
+    // hasn't necessarily laid it out yet. Creating the Leaflet map before
+    // that layout pass makes it measure the wrong container size (usually
+    // 0 height, sometimes a stale value), and it renders tiles and the
+    // country layer to that wrong size instead of the real one -
+    // clipping or offsetting everything and leaving the rest of the
+    // container blank. Two animation frames guarantees a layout pass has
+    // happened first.
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+
     const map = L.map('map', {
       center: [20, 8],
       zoom: 1,
@@ -156,9 +175,10 @@ function initMap() {
     L.geoJSON(worldOsShare, {
       style: (feature) => ({
         fillColor: colorFor(feature.properties.topOs),
-        fillOpacity: 0.85,
-        color: cssVar('--bg', '#0b0b0a'),
-        weight: 0.6,
+        fillOpacity: 0.92,
+        color: cssVar('--surface', '#141312'),
+        weight: 0.75,
+        lineJoin: 'round',
       }),
       onEachFeature: (feature, layer) => {
         const p = feature.properties;
@@ -178,7 +198,13 @@ function initMap() {
       <div class="map-legend__row"><span class="map-legend__swatch" style="background:${noDataColor()}"></span>No data</div>
     `;
 
-    window.addEventListener('resize', () => map.invalidateSize());
+    // Belt-and-braces alongside the layout wait above: re-measure whenever
+    // the container's actual box size changes for any reason (window
+    // resize, the reveal-block's own entrance transform settling, fonts
+    // loading late and reflowing the page, etc.), not just on window
+    // resize.
+    const mapCard = document.getElementById('map');
+    new ResizeObserver(() => map.invalidateSize()).observe(mapCard);
 
     if (window.matchMedia('(pointer: coarse)').matches) {
       map.dragging.disable();
@@ -209,9 +235,13 @@ function initMap() {
 
 let tableInitPromise = null;
 
-function osCell(entry) {
-  if (!entry) return '';
-  return `<span class="os-cell"><span class="dot" style="background:${colorFor(entry.os)}"></span>${entry.os}</span>`;
+function osCell(os) {
+  if (!os) return '';
+  return `<span class="os-cell"><span class="dot" style="background:${colorFor(os)}"></span>${os}</span>`;
+}
+
+function shareCell(share) {
+  return share == null ? '' : `${share}%`;
 }
 
 function initTable() {
@@ -250,11 +280,25 @@ function initTable() {
     // jQuery's UMD export resolves directly, not wrapped with `default`.
     const $ = jqueryModule.default ?? jqueryModule;
 
+    // Every column below gets its own uniquely-named field - DataTables'
+    // Responsive extension tracks columns by their `data` key, and two
+    // columns sharing one key (as this used to do, reusing the same
+    // breakdown entry for both its "OS" and "share" columns) made it
+    // mix up which value belonged to which column once it started
+    // collapsing/reordering them, corrupting cells including the name.
     const rows = [...worldOsShare.features]
       .sort((a, b) => a.properties.name.localeCompare(b.properties.name))
       .map((f) => {
         const [first, second, third] = f.properties.breakdown;
-        return { name: f.properties.name, first, second, third };
+        return {
+          name: f.properties.name,
+          os1: first?.os ?? null,
+          share1: first?.share ?? null,
+          os2: second?.os ?? null,
+          share2: second?.share ?? null,
+          os3: third?.os ?? null,
+          share3: third?.share ?? null,
+        };
       });
 
     $('#os-table').DataTable({
@@ -267,12 +311,12 @@ function initTable() {
       order: [[2, 'desc']],
       columns: [
         { data: 'name' },
-        { data: 'first', render: (v) => osCell(v) },
-        { data: 'first', render: (v) => (v ? `${v.share}%` : '') },
-        { data: 'second', render: (v) => osCell(v) },
-        { data: 'second', render: (v) => (v ? `${v.share}%` : '') },
-        { data: 'third', render: (v) => osCell(v) },
-        { data: 'third', render: (v) => (v ? `${v.share}%` : '') },
+        { data: 'os1', render: (v) => osCell(v) },
+        { data: 'share1', render: (v) => shareCell(v) },
+        { data: 'os2', render: (v) => osCell(v) },
+        { data: 'share2', render: (v) => shareCell(v) },
+        { data: 'os3', render: (v) => osCell(v) },
+        { data: 'share3', render: (v) => shareCell(v) },
       ],
     });
   })();

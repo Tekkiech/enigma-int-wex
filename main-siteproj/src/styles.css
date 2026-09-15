@@ -296,6 +296,7 @@ code {
 .chart-wrap {
   position: relative;
   height: clamp(280px, 42vw, 420px);
+  margin-top: 12px;
 }
 
 /* Map layout */
