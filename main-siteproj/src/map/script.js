@@ -20,8 +20,14 @@ async function initMap() {
   // box size at construction time, and creating it too early (before a
   // layout pass) makes it render tiles and the country layer at the
   // wrong size - clipping content and leaving the rest of the container
-  // blank.
-  await new Promise((resolve) => requestAnimationFrame(resolve));
+  // blank. Raced against a short timeout because rAF doesn't fire (or
+  // fires very late) while the tab is backgrounded, and a map opened in
+  // a background tab should still be ready once its visitor switches to
+  // it rather than waiting on a frame that may not come for a while.
+  await Promise.race([
+    new Promise((resolve) => requestAnimationFrame(resolve)),
+    new Promise((resolve) => setTimeout(resolve, 150)),
+  ]);
 
   const map = L.map('map', {
     center: [20, 8],
@@ -30,6 +36,10 @@ async function initMap() {
     minZoom: 1,
     maxZoom: 8,
     worldCopyJump: true,
+    // Leaflet's own scrollWheelZoom stays off: a plain scroll over the
+    // map would otherwise zoom it instead of scrolling the page. Scroll
+    // zoom is wired up manually below, gated behind ctrl/cmd (see
+    // "Scroll to zoom" further down) so both gestures stay available.
     scrollWheelZoom: false,
   });
 
@@ -86,6 +96,33 @@ async function initMap() {
   // resize, the reveal-block's own entrance transform settling, fonts
   // loading late and reflowing the page, etc.).
   new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('map'));
+
+  // ---- Scroll to zoom, gated behind ctrl/cmd ----
+  // A plain scroll over the map keeps scrolling the page, same reasoning
+  // as the touch-drag gating below: an embedded map shouldn't be able to
+  // hijack the gesture visitors use to move around the rest of the page.
+  // Holding ctrl (Windows/Linux) or cmd (Mac) zooms instead, the same
+  // convention Google Maps and Mapbox use - and it works immediately,
+  // with no click-to-activate step required.
+  const mapEl = document.getElementById('map');
+  mapEl.addEventListener(
+    'wheel',
+    (e) => {
+      if (!e.ctrlKey && !e.metaKey) return;
+      e.preventDefault();
+      const point = map.mouseEventToContainerPoint(e);
+      const nextZoom = map.getZoom() + (e.deltaY < 0 ? 0.5 : -0.5);
+      map.setZoomAround(point, nextZoom, { animate: false });
+    },
+    { passive: false }
+  );
+
+  if (!window.matchMedia('(pointer: coarse)').matches) {
+    const zoomHint = document.createElement('span');
+    zoomHint.className = 'map-zoom-hint';
+    zoomHint.textContent = navigator.platform.includes('Mac') ? '⌘ scroll to zoom' : 'ctrl + scroll to zoom';
+    document.querySelector('.map-card').appendChild(zoomHint);
+  }
 
   if (window.matchMedia('(pointer: coarse)').matches) {
     map.dragging.disable();
