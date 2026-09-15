@@ -1,6 +1,6 @@
 # enigma-int-wex
 
-Front-end tasks from a work experience placement at Enigma Interactive: three standalone projects, each using [Parcel](https://parceljs.org/) as the dev server and bundler.
+Front-end tasks from a work experience placement at Enigma Interactive: three standalone projects, each using [Parcel](https://parceljs.org/) as the dev server and bundler, plus a fourth project combining all three chart/table/map libraries around one shared dataset.
 
 ## task1-chartjs
 
@@ -40,6 +40,21 @@ A [Leaflet](https://leafletjs.com/) map of registered heat networks across the N
 
 ```bash
 cd task3-leafletjs
+npm install
+npm run dev   # Parcel dev server
+npm run build # production build
+```
+
+## main-siteproj
+
+A one-page dashboard combining all three libraries around a single real dataset: worldwide operating system market share from [StatCounter Global Stats](https://gs.statcounter.com/os-market-share). A [Chart.js](https://www.chartjs.org/) line chart shows the 36-month worldwide trend, a [Leaflet](https://leafletjs.com/) choropleth shows the leading OS per country with a full breakdown in each popup, and a [DataTables](https://datatables.net/) table lists every one of the 175 tracked countries and territories, sortable, searchable, and responsive down to mobile. The same seven-colour OS key (sampled from the Evidence Hub's own theme-accent palette) is used across all three, so a colour means the same thing everywhere on the page.
+
+- `src/data/trend.js` and `src/data/world-os-share.json` are the data. StatCounter Global Stats doesn't publish a public API, so these are a snapshot pulled from the same JSON endpoint its own site chart uses (`chart.php`, `forceJson=true`), fetched 2026-09-15; `world-os-share.json` also joins that per-country breakdown to boundaries from [Natural Earth](https://github.com/nvkelso/natural-earth-vector)'s public-domain 110m admin-0 set. Swapping in a fresher pull, or a different StatCounter metric (browser, screen resolution, search engine), only means replacing these two files.
+- `src/data/os-colors.js` is the shared colour key used by the chart, the map and the table
+- `src/script.js` sets up all three libraries; `src/styles.css` is the shared Evidence Hub theme
+
+```bash
+cd main-siteproj
 npm install
 npm run dev   # Parcel dev server
 npm run build # production build
