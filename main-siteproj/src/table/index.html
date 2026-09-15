@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Full breakdown by country &middot; OS market share</title>
+  <meta name="description" content="Operating system market share for every tracked country and territory, sortable and searchable.">
+  <meta name="theme-color" content="#0b0b0a" id="theme-color-meta">
+
+  <script>
+    (function () {
+      var saved = localStorage.getItem('main-siteproj-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+  <header class="chrome-bar">
+    <div class="chrome-left">
+      <div class="traffic-lights" aria-hidden="true">
+        <span class="tl-red"></span>
+        <span class="tl-yellow"></span>
+        <span class="tl-green"></span>
+      </div>
+      <span class="chrome-title">isaac@tekkiech: ~/main-siteproj/table &middot; zsh</span>
+    </div>
+    <nav class="chrome-right">
+      <a href="/" class="chrome-nav-link">~</a>
+      <a href="/trend/" class="chrome-nav-link">--trend</a>
+      <a href="/map/" class="chrome-nav-link">--map</a>
+      <a href="/table/" class="chrome-nav-link">--table</a>
+      <a href="/about/" class="chrome-nav-link">--about</a>
+      <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle light and dark theme">
+        &middot; <span id="theme-label">dark</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="reveal-block" aria-labelledby="table-heading">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj/table % <span class="accent">ls ~/countries --all</span></div>
+      <div class="reveal-block__header">
+        <h1 id="table-heading">Full breakdown by country</h1>
+        <p>All 175 countries and territories StatCounter has data for, August 2026.</p>
+      </div>
+      <div class="table-card">
+        <table id="os-table" class="display styled-table" style="width:100%">
+          <thead>
+            <tr>
+              <th data-priority="1">Country</th>
+              <th data-priority="2">Leading OS</th>
+              <th data-priority="3">Share</th>
+              <th data-priority="4">2nd</th>
+              <th data-priority="5">Share</th>
+              <th data-priority="6">3rd</th>
+              <th data-priority="6">Share</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    isaac@tekkiech ~/main-siteproj/table % <span class="accent">cd ..</span> &middot; <a href="/">back to ~/main-siteproj</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leading OS by country &middot; OS market share</title>
+  <meta name="description" content="A world choropleth of the leading operating system in every tracked country, August 2026.">
+  <meta name="theme-color" content="#0b0b0a" id="theme-color-meta">
+
+  <script>
+    (function () {
+      var saved = localStorage.getItem('main-siteproj-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+  <header class="chrome-bar">
+    <div class="chrome-left">
+      <div class="traffic-lights" aria-hidden="true">
+        <span class="tl-red"></span>
+        <span class="tl-yellow"></span>
+        <span class="tl-green"></span>
+      </div>
+      <span class="chrome-title">isaac@tekkiech: ~/main-siteproj/map &middot; zsh</span>
+    </div>
+    <nav class="chrome-right">
+      <a href="/" class="chrome-nav-link">~</a>
+      <a href="/trend/" class="chrome-nav-link">--trend</a>
+      <a href="/map/" class="chrome-nav-link">--map</a>
+      <a href="/table/" class="chrome-nav-link">--table</a>
+      <a href="/about/" class="chrome-nav-link">--about</a>
+      <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle light and dark theme">
+        &middot; <span id="theme-label">dark</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="reveal-block" aria-labelledby="map-heading">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj/map % <span class="accent">curl gs.statcounter.com/os-market-share --map</span></div>
+      <div class="reveal-block__header">
+        <h1 id="map-heading">Leading OS by country</h1>
+        <p>August 2026. Tap a country for its full breakdown.</p>
+      </div>
+      <div class="map-shell">
+        <div class="map-legend" id="map-legend"></div>
+        <div class="map-card">
+          <div id="map"></div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    isaac@tekkiech ~/main-siteproj/map % <span class="accent">cd ..</span> &middot; <a href="/">back to ~/main-siteproj</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>

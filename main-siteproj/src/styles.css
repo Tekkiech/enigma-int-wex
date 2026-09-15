@@ -148,6 +148,10 @@ code {
   color: var(--text);
 }
 
+.chrome-nav-link.is-active {
+  color: var(--accent);
+}
+
 .theme-toggle-btn {
   font-size: 0.75rem;
   color: var(--muted);
@@ -227,6 +231,55 @@ code {
   color: var(--text);
 }
 
+/* ---------- Nav cards (landing page -> trend / map / table) ---------- */
+
+.nav-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-top: 1.75rem;
+}
+
+.nav-card {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem;
+  background: var(--surface);
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.nav-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent);
+}
+
+.nav-card__path {
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.nav-card h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--text);
+}
+
+.nav-card p {
+  margin: 0;
+  flex: 1;
+  font-size: 0.82rem;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.nav-card__cta {
+  font-size: 0.8rem;
+  color: var(--accent);
+}
+
 /* ---------- Tag marquee ---------- */
 
 .marquee {
@@ -278,11 +331,19 @@ code {
   margin-bottom: 1.1rem;
 }
 
+.reveal-block__header h1,
 .reveal-block__header h2 {
   margin: 0 0 4px;
-  font-size: 1.05rem;
   font-weight: 700;
   color: var(--text);
+}
+
+.reveal-block__header h1 {
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+}
+
+.reveal-block__header h2 {
+  font-size: 1.05rem;
 }
 
 .reveal-block__header p {
@@ -295,17 +356,22 @@ code {
 
 .chart-wrap {
   position: relative;
-  height: clamp(280px, 42vw, 420px);
+  height: clamp(320px, 46vw, 480px);
   margin-top: 12px;
+}
+
+.chart-wrap--drilldown {
+  height: clamp(260px, 34vw, 360px);
 }
 
 /* Map layout */
 
 .map-shell {
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: 220px 1fr;
   gap: 16px;
   align-items: start;
+  margin-top: 12px;
 }
 
 .map-card {
@@ -317,7 +383,7 @@ code {
 }
 
 #map {
-  height: clamp(340px, 55vh, 560px);
+  height: clamp(400px, 68vh, 680px);
   width: 100%;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
@@ -442,6 +508,7 @@ code {
 
 .table-card {
   overflow-x: auto;
+  margin-top: 12px;
 }
 
 .styled-table {
@@ -556,20 +623,14 @@ table.dataTable > tbody > tr.child span.dtr-title {
   color: var(--text);
 }
 
-/* Skeleton placeholder shown before the map/table lazy-load */
-
-.lazy-skeleton {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  height: clamp(240px, 40vh, 400px);
-  border: 1px dashed var(--border);
-  border-radius: var(--radius-sm);
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
 /* ---------- About / outro ---------- */
+
+.page__outro h1 {
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 700;
+  color: var(--text);
+  margin: 0 0 0.9rem;
+}
 
 .page__outro p {
   margin: 0;
@@ -616,6 +677,10 @@ table.dataTable > tbody > tr.child span.dtr-title {
   .map-shell {
     grid-template-columns: 1fr;
   }
+
+  .nav-cards {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -633,7 +698,7 @@ table.dataTable > tbody > tr.child span.dtr-title {
   }
 
   #map {
-    height: clamp(300px, 55vh, 440px);
+    height: clamp(320px, 60vh, 480px);
   }
 
   .dt-container .dt-layout-row {

@@ -33,10 +33,11 @@
       <span class="chrome-title">isaac@tekkiech: ~/main-siteproj &middot; zsh</span>
     </div>
     <nav class="chrome-right">
-      <a href="#trend" class="chrome-nav-link">--trend</a>
-      <a href="#map" class="chrome-nav-link">--map</a>
-      <a href="#table" class="chrome-nav-link">--table</a>
-      <a href="#about" class="chrome-nav-link">--about</a>
+      <a href="/" class="chrome-nav-link">~</a>
+      <a href="/trend/" class="chrome-nav-link">--trend</a>
+      <a href="/map/" class="chrome-nav-link">--map</a>
+      <a href="/table/" class="chrome-nav-link">--table</a>
+      <a href="/about/" class="chrome-nav-link">--about</a>
       <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle light and dark theme">
         &middot; <span id="theme-label">dark</span>
       </button>
@@ -55,10 +56,30 @@
       </div>
       <p class="hero-bio">
         Three placement tasks, one real dataset. A monthly trend, a per-country choropleth and a
-        sortable table of every tracked country, all reading from the same source so a colour
-        means the same OS everywhere on the page. See <code>--about</code> for where the numbers
-        come from.
+        sortable table of every tracked country, each on its own page but all reading from the
+        same source, so a colour means the same OS everywhere on the site.
       </p>
+
+      <div class="nav-cards">
+        <a class="nav-card" href="/trend/">
+          <span class="nav-card__path">~/main-siteproj/trend</span>
+          <h2>Worldwide trend</h2>
+          <p>Monthly share by OS, Sept 2023 &ndash; Aug 2026. Click a legend key for a country breakdown.</p>
+          <span class="nav-card__cta">Open &rarr;</span>
+        </a>
+        <a class="nav-card" href="/map/">
+          <span class="nav-card__path">~/main-siteproj/map</span>
+          <h2>Leading OS by country</h2>
+          <p>A world choropleth, August 2026. Tap a country for its full breakdown.</p>
+          <span class="nav-card__cta">Open &rarr;</span>
+        </a>
+        <a class="nav-card" href="/table/">
+          <span class="nav-card__path">~/main-siteproj/table</span>
+          <h2>Full breakdown by country</h2>
+          <p>All 175 tracked countries and territories, sortable and searchable.</p>
+          <span class="nav-card__cta">Open &rarr;</span>
+        </a>
+      </div>
     </section>
 
     <div class="marquee" aria-hidden="true">
@@ -67,58 +88,6 @@
         <span>ANDROID</span><span>WINDOWS</span><span>IOS</span><span>MACOS</span><span>OS X</span><span>LINUX</span><span>CHROME OS</span>
       </div>
     </div>
-
-    <section id="trend" class="reveal-block" aria-labelledby="trend-heading">
-      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">cat trend.json</span></div>
-      <div class="reveal-block__header">
-        <h2 id="trend-heading">Worldwide trend</h2>
-        <p>Monthly share by operating system, Sept 2023 &ndash; Aug 2026.</p>
-      </div>
-      <div class="chart-wrap">
-        <canvas id="trend-chart" role="img" aria-label="Line chart of worldwide operating system market share by month"></canvas>
-      </div>
-    </section>
-
-    <section id="map" class="reveal-block" aria-labelledby="map-heading">
-      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">curl gs.statcounter.com/os-market-share --map</span></div>
-      <div class="reveal-block__header">
-        <h2 id="map-heading">Leading OS by country</h2>
-        <p>August 2026. Tap a country for its full breakdown.</p>
-      </div>
-      <div id="map-mount">
-        <div class="lazy-skeleton">loading map&hellip;</div>
-      </div>
-    </section>
-
-    <section id="table" class="reveal-block" aria-labelledby="table-heading">
-      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">ls ~/countries --all</span></div>
-      <div class="reveal-block__header">
-        <h2 id="table-heading">Full breakdown by country</h2>
-        <p>All 175 countries and territories StatCounter has data for, August 2026.</p>
-      </div>
-      <div id="table-mount">
-        <div class="lazy-skeleton">loading table&hellip;</div>
-      </div>
-    </section>
-
-    <section id="about" class="page__outro">
-      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">cat README.md</span></div>
-      <p>
-        All three views read from <code>src/data/</code>: <code>trend.js</code> (the worldwide
-        monthly series) and <code>world-os-share.json</code> (per-country breakdown, joined to
-        country boundaries from Natural Earth's 110m admin-0 set). StatCounter Global Stats
-        doesn't publish a public API, so this is a snapshot fetched from the same JSON endpoint
-        its own site chart uses, taken 2026-09-15.
-      </p>
-      <p>
-        Swapping in a fresher pull, or a different metric StatCounter tracks (browser, screen
-        resolution, search engine), means replacing those two files and nothing else.
-      </p>
-      <p>
-        Source: <a href="https://gs.statcounter.com/os-market-share">StatCounter Global Stats, Operating System Market Share Worldwide</a>.
-        Country boundaries: <a href="https://github.com/nvkelso/natural-earth-vector">Natural Earth</a>, public domain.
-      </p>
-    </section>
   </main>
 
   <footer class="site-footer">
@@ -127,6 +96,9 @@
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
-  <script type="module" src="script.js"></script>
+  <script type="module">
+    import { bootPage } from './theme.js';
+    bootPage();
+  </script>
 </body>
 </html>
