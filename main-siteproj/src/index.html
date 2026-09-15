@@ -21,7 +21,7 @@
 
   <link rel="stylesheet" href="styles.css">
 </head>
-<body>
+<body data-base="./" data-page="home">
 
   <header class="chrome-bar">
     <div class="chrome-left">
@@ -33,11 +33,11 @@
       <span class="chrome-title">isaac@tekkiech: ~/main-siteproj &middot; zsh</span>
     </div>
     <nav class="chrome-right">
-      <a href="/" class="chrome-nav-link">~</a>
-      <a href="/trend/" class="chrome-nav-link">--trend</a>
-      <a href="/map/" class="chrome-nav-link">--map</a>
-      <a href="/table/" class="chrome-nav-link">--table</a>
-      <a href="/about/" class="chrome-nav-link">--about</a>
+      <a href="#" data-nav="home" class="chrome-nav-link">~</a>
+      <a href="#" data-nav="trend" class="chrome-nav-link">--trend</a>
+      <a href="#" data-nav="map" class="chrome-nav-link">--map</a>
+      <a href="#" data-nav="table" class="chrome-nav-link">--table</a>
+      <a href="#" data-nav="about" class="chrome-nav-link">--about</a>
       <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle light and dark theme">
         &middot; <span id="theme-label">dark</span>
       </button>
@@ -61,19 +61,19 @@
       </p>
 
       <div class="nav-cards">
-        <a class="nav-card" href="/trend/">
+        <a class="nav-card" href="#" data-nav="trend">
           <span class="nav-card__path">~/main-siteproj/trend</span>
           <h2>Worldwide trend</h2>
           <p>Monthly share by OS, Sept 2023 &ndash; Aug 2026. Click a legend key for a country breakdown.</p>
           <span class="nav-card__cta">Open &rarr;</span>
         </a>
-        <a class="nav-card" href="/map/">
+        <a class="nav-card" href="#" data-nav="map">
           <span class="nav-card__path">~/main-siteproj/map</span>
           <h2>Leading OS by country</h2>
           <p>A world choropleth, August 2026. Tap a country for its full breakdown.</p>
           <span class="nav-card__cta">Open &rarr;</span>
         </a>
-        <a class="nav-card" href="/table/">
+        <a class="nav-card" href="#" data-nav="table">
           <span class="nav-card__path">~/main-siteproj/table</span>
           <h2>Full breakdown by country</h2>
           <p>All 175 tracked countries and territories, sortable and searchable.</p>

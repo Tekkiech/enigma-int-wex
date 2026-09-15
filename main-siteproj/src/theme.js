@@ -28,13 +28,35 @@ function initTheme() {
   });
 }
 
-// Marks the nav link for the current page so a visitor can see where
-// they are, matching the URL path to each link's href.
-function markActiveNavLink() {
-  const path = window.location.pathname.replace(/\/index\.html$/, '/');
-  document.querySelectorAll('.chrome-nav-link').forEach((link) => {
-    const href = link.getAttribute('href');
-    if (href === path || (href !== '/' && path.startsWith(href))) {
+// Every page one level under the root (trend/, map/, table/, about/)
+// sets <body data-base="../">; the root landing page sets data-base="./".
+// Internal nav links are wired up here rather than written as real
+// hrefs in the HTML: Parcel treats an <a href="..."> pointing at
+// another page it's bundling as a build dependency and rewrites it to
+// a root-absolute path (e.g. "/trend/index.html") no matter how it was
+// written in source. That's correct only when the site is deployed at
+// a domain root; opened straight off disk, or hosted under a sub-path
+// (a project page, a preview deploy, anything not served from "/"), a
+// root-absolute link points outside the site entirely and silently
+// fails - which looks exactly like "the links don't do anything".
+// A plain string in a data attribute isn't a link Parcel's bundler
+// recognises, so it passes through untouched and lets us build the
+// real, correctly-relative href at runtime instead.
+const PAGES = {
+  home: 'index.html',
+  trend: 'trend/index.html',
+  map: 'map/index.html',
+  table: 'table/index.html',
+  about: 'about/index.html',
+};
+
+function wireNavLinks() {
+  const base = document.body.dataset.base ?? './';
+  document.querySelectorAll('[data-nav]').forEach((link) => {
+    const target = PAGES[link.dataset.nav];
+    if (!target) return;
+    link.href = base + target;
+    if (link.classList.contains('chrome-nav-link') && link.dataset.nav === document.body.dataset.page) {
       link.classList.add('is-active');
     }
   });
@@ -71,7 +93,7 @@ function initScrollAnimations() {
 
 export function bootPage() {
   initTheme();
-  markActiveNavLink();
+  wireNavLinks();
   if (document.readyState === 'complete') {
     initScrollAnimations();
   } else {
