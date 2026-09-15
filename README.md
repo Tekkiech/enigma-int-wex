@@ -47,11 +47,13 @@ npm run build # production build
 
 ## main-siteproj
 
-A one-page dashboard combining all three libraries around a single real dataset: worldwide operating system market share from [StatCounter Global Stats](https://gs.statcounter.com/os-market-share). A [Chart.js](https://www.chartjs.org/) line chart shows the 36-month worldwide trend, a [Leaflet](https://leafletjs.com/) choropleth shows the leading OS per country with a full breakdown in each popup, and a [DataTables](https://datatables.net/) table lists every one of the 175 tracked countries and territories, sortable, searchable, and responsive down to mobile. The same seven-colour OS key (sampled from the Evidence Hub's own theme-accent palette) is used across all three, so a colour means the same thing everywhere on the page.
+A one-page dashboard combining all three libraries around a single real dataset: worldwide operating system market share from [StatCounter Global Stats](https://gs.statcounter.com/os-market-share). A [Chart.js](https://www.chartjs.org/) line chart shows the 36-month worldwide trend, a [Leaflet](https://leafletjs.com/) choropleth shows the leading OS per country with a full breakdown in each popup, and a [DataTables](https://datatables.net/) table lists every one of the 175 tracked countries and territories, sortable, searchable, and responsive down to mobile. The same seven-colour OS key is used across all three, so a colour means the same thing everywhere on the page.
+
+Unlike tasks 1-3, this one isn't an Evidence Hub deliverable, so it wears its own brand instead of the client's: the terminal chrome-bar, JetBrains Mono, palette and GSAP/ScrollTrigger scroll-reveal are ported from [tekkiech.tech](https://tekkiech.tech) ([source](https://github.com/Tekkiech/Tekkiech-Space)). Leaflet, jQuery/DataTables and the 200KB country dataset are only fetched once their section scrolls near the viewport (`IntersectionObserver` + dynamic `import()`), so the initial JS the page needs to paint the hero and chart is under 210KB rather than the ~770KB all four libraries add up to.
 
 - `src/data/trend.js` and `src/data/world-os-share.json` are the data. StatCounter Global Stats doesn't publish a public API, so these are a snapshot pulled from the same JSON endpoint its own site chart uses (`chart.php`, `forceJson=true`), fetched 2026-09-15; `world-os-share.json` also joins that per-country breakdown to boundaries from [Natural Earth](https://github.com/nvkelso/natural-earth-vector)'s public-domain 110m admin-0 set. Swapping in a fresher pull, or a different StatCounter metric (browser, screen resolution, search engine), only means replacing these two files.
-- `src/data/os-colors.js` is the shared colour key used by the chart, the map and the table
-- `src/script.js` sets up all three libraries; `src/styles.css` is the shared Evidence Hub theme
+- `src/data/os-colors.js` is the shared colour key used by the chart, the map and the table, read from the `--os-*` CSS custom properties in `styles.css` so it follows the light/dark theme toggle automatically
+- `src/script.js` sets up all three libraries, the lazy-loading, and the theme toggle; `src/styles.css` is the tekkiech.tech-derived theme
 
 ```bash
 cd main-siteproj
