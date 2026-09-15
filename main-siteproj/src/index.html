@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Operating system market share</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+  <header class="site-bar">
+    <span class="site-bar__mark" aria-hidden="true"></span>
+    <span class="site-bar__label">Technology &nbsp;&middot;&nbsp; Operating system market share</span>
+  </header>
+
+  <main class="page">
+    <div class="page__intro">
+      <p class="breadcrumb">Task 1 + Task 2 + Task 3, one dataset</p>
+      <h1>Operating system market share, worldwide</h1>
+      <p>
+        Same source, three views: a monthly trend (Chart.js), a per-country breakdown
+        (Leaflet) and a sortable table of every tracked country (DataTables). Figures are
+        a snapshot from StatCounter Global Stats; see "About this data" below.
+      </p>
+    </div>
+
+    <section class="card" aria-labelledby="trend-heading">
+      <div class="card__header">
+        <h2 id="trend-heading">Worldwide trend</h2>
+        <p>Monthly share by operating system, Sept 2023 &ndash; Aug 2026.</p>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="trend-chart" role="img" aria-label="Line chart of worldwide operating system market share by month"></canvas>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="map-heading">
+      <div class="card__header">
+        <h2 id="map-heading">Leading OS by country</h2>
+        <p>August 2026. Tap a country for its full breakdown.</p>
+      </div>
+      <div class="map-shell">
+        <div class="map-legend" id="map-legend"></div>
+        <div class="map-card">
+          <div id="map"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card" aria-labelledby="table-heading">
+      <div class="card__header">
+        <h2 id="table-heading">Full breakdown by country</h2>
+        <p>All 175 countries and territories StatCounter has data for, August 2026.</p>
+      </div>
+      <div class="table-card">
+        <table id="os-table" class="display styled-table" style="width:100%">
+          <thead>
+            <tr>
+              <th data-priority="1">Country</th>
+              <th data-priority="2">Leading OS</th>
+              <th data-priority="3">Share</th>
+              <th data-priority="4">2nd</th>
+              <th data-priority="5">Share</th>
+              <th data-priority="6">3rd</th>
+              <th data-priority="6">Share</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="page__outro">
+      <h2>About this data</h2>
+      <p>
+        All three views read from <code>src/data/</code>: <code>trend.js</code> (the
+        worldwide monthly series) and <code>world-os-share.json</code> (per-country
+        breakdown, joined to country boundaries from Natural Earth's 110m admin-0 set).
+        StatCounter Global Stats doesn't publish a public API, so this is a snapshot
+        fetched from the same JSON endpoint its own site chart uses, taken 2026-09-15.
+        Swapping in a fresher pull, or a different metric StatCounter tracks (browser,
+        screen resolution, search engine), means replacing those two files and nothing
+        else.
+      </p>
+      <p class="page__outro-source">
+        Source: <a href="https://gs.statcounter.com/os-market-share">StatCounter Global Stats, Operating System Market Share Worldwide</a>.
+        Country boundaries: <a href="https://github.com/nvkelso/natural-earth-vector">Natural Earth</a>, public domain.
+      </p>
+    </div>
+  </main>
+
+  <footer class="site-footer" aria-hidden="true"></footer>
+
+  <script type="module" src="script.js"></script>
+</body>
+</html>
