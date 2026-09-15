@@ -1,0 +1,11 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "task3-leafletjs",
+      "runtimeExecutable": "./task3-leafletjs/node_modules/.bin/parcel",
+      "runtimeArgs": ["task3-leafletjs/src/index.html"],
+      "port": 1234
+    }
+  ]
+}
