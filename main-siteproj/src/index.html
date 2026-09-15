@@ -4,33 +4,73 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Operating system market share</title>
+  <meta name="description" content="Worldwide operating system market share: a Chart.js trend, a Leaflet choropleth and a DataTables breakdown, all from one dataset.">
+  <meta name="theme-color" content="#0b0b0a" id="theme-color-meta">
+
+  <script>
+    (function () {
+      var saved = localStorage.getItem('main-siteproj-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css">
 </head>
 <body>
 
-  <header class="site-bar">
-    <span class="site-bar__mark" aria-hidden="true"></span>
-    <span class="site-bar__label">Technology &nbsp;&middot;&nbsp; Operating system market share</span>
+  <header class="chrome-bar">
+    <div class="chrome-left">
+      <div class="traffic-lights" aria-hidden="true">
+        <span class="tl-red"></span>
+        <span class="tl-yellow"></span>
+        <span class="tl-green"></span>
+      </div>
+      <span class="chrome-title">isaac@tekkiech: ~/main-siteproj &middot; zsh</span>
+    </div>
+    <nav class="chrome-right">
+      <a href="#trend" class="chrome-nav-link">--trend</a>
+      <a href="#map" class="chrome-nav-link">--map</a>
+      <a href="#table" class="chrome-nav-link">--table</a>
+      <a href="#about" class="chrome-nav-link">--about</a>
+      <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle light and dark theme">
+        &middot; <span id="theme-label">dark</span>
+      </button>
+    </nav>
   </header>
 
   <main class="page">
-    <div class="page__intro">
-      <p class="breadcrumb">Task 1 + Task 2 + Task 3, one dataset</p>
+    <section class="hero">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">whoami</span></div>
       <h1>Operating system market share, worldwide</h1>
-      <p>
-        Same source, three views: a monthly trend (Chart.js), a per-country breakdown
-        (Leaflet) and a sortable table of every tracked country (DataTables). Figures are
-        a snapshot from StatCounter Global Stats; see "About this data" below.
+      <div class="hero-tags">
+        <span class="hero-tag">Chart.js</span>
+        <span class="hero-tag">Leaflet</span>
+        <span class="hero-tag">DataTables</span>
+        <span class="hero-tag">StatCounter Global Stats</span>
+      </div>
+      <p class="hero-bio">
+        Three placement tasks, one real dataset. A monthly trend, a per-country choropleth and a
+        sortable table of every tracked country, all reading from the same source so a colour
+        means the same OS everywhere on the page. See <code>--about</code> for where the numbers
+        come from.
       </p>
+    </section>
+
+    <div class="marquee" aria-hidden="true">
+      <div class="marquee-track">
+        <span>ANDROID</span><span>WINDOWS</span><span>IOS</span><span>MACOS</span><span>OS X</span><span>LINUX</span><span>CHROME OS</span>
+        <span>ANDROID</span><span>WINDOWS</span><span>IOS</span><span>MACOS</span><span>OS X</span><span>LINUX</span><span>CHROME OS</span>
+      </div>
     </div>
 
-    <section class="card" aria-labelledby="trend-heading">
-      <div class="card__header">
+    <section id="trend" class="reveal-block" aria-labelledby="trend-heading">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">cat trend.json</span></div>
+      <div class="reveal-block__header">
         <h2 id="trend-heading">Worldwide trend</h2>
         <p>Monthly share by operating system, Sept 2023 &ndash; Aug 2026.</p>
       </div>
@@ -39,63 +79,54 @@
       </div>
     </section>
 
-    <section class="card" aria-labelledby="map-heading">
-      <div class="card__header">
+    <section id="map" class="reveal-block" aria-labelledby="map-heading">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">curl gs.statcounter.com/os-market-share --map</span></div>
+      <div class="reveal-block__header">
         <h2 id="map-heading">Leading OS by country</h2>
         <p>August 2026. Tap a country for its full breakdown.</p>
       </div>
-      <div class="map-shell">
-        <div class="map-legend" id="map-legend"></div>
-        <div class="map-card">
-          <div id="map"></div>
-        </div>
+      <div id="map-mount">
+        <div class="lazy-skeleton">loading map&hellip;</div>
       </div>
     </section>
 
-    <section class="card" aria-labelledby="table-heading">
-      <div class="card__header">
+    <section id="table" class="reveal-block" aria-labelledby="table-heading">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">ls ~/countries --all</span></div>
+      <div class="reveal-block__header">
         <h2 id="table-heading">Full breakdown by country</h2>
         <p>All 175 countries and territories StatCounter has data for, August 2026.</p>
       </div>
-      <div class="table-card">
-        <table id="os-table" class="display styled-table" style="width:100%">
-          <thead>
-            <tr>
-              <th data-priority="1">Country</th>
-              <th data-priority="2">Leading OS</th>
-              <th data-priority="3">Share</th>
-              <th data-priority="4">2nd</th>
-              <th data-priority="5">Share</th>
-              <th data-priority="6">3rd</th>
-              <th data-priority="6">Share</th>
-            </tr>
-          </thead>
-          <tbody></tbody>
-        </table>
+      <div id="table-mount">
+        <div class="lazy-skeleton">loading table&hellip;</div>
       </div>
     </section>
 
-    <div class="page__outro">
-      <h2>About this data</h2>
+    <section id="about" class="page__outro">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj % <span class="accent">cat README.md</span></div>
       <p>
-        All three views read from <code>src/data/</code>: <code>trend.js</code> (the
-        worldwide monthly series) and <code>world-os-share.json</code> (per-country
-        breakdown, joined to country boundaries from Natural Earth's 110m admin-0 set).
-        StatCounter Global Stats doesn't publish a public API, so this is a snapshot
-        fetched from the same JSON endpoint its own site chart uses, taken 2026-09-15.
-        Swapping in a fresher pull, or a different metric StatCounter tracks (browser,
-        screen resolution, search engine), means replacing those two files and nothing
-        else.
+        All three views read from <code>src/data/</code>: <code>trend.js</code> (the worldwide
+        monthly series) and <code>world-os-share.json</code> (per-country breakdown, joined to
+        country boundaries from Natural Earth's 110m admin-0 set). StatCounter Global Stats
+        doesn't publish a public API, so this is a snapshot fetched from the same JSON endpoint
+        its own site chart uses, taken 2026-09-15.
       </p>
-      <p class="page__outro-source">
+      <p>
+        Swapping in a fresher pull, or a different metric StatCounter tracks (browser, screen
+        resolution, search engine), means replacing those two files and nothing else.
+      </p>
+      <p>
         Source: <a href="https://gs.statcounter.com/os-market-share">StatCounter Global Stats, Operating System Market Share Worldwide</a>.
         Country boundaries: <a href="https://github.com/nvkelso/natural-earth-vector">Natural Earth</a>, public domain.
       </p>
-    </div>
+    </section>
   </main>
 
-  <footer class="site-footer" aria-hidden="true"></footer>
+  <footer class="site-footer">
+    isaac@tekkiech ~/main-siteproj % <span class="accent">exit</span> &middot; built for the Enigma Interactive placement, tasks 1&ndash;3 combined
+  </footer>
 
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
   <script type="module" src="script.js"></script>
 </body>
 </html>
