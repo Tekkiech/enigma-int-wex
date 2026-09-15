@@ -150,3 +150,25 @@ cdn
 media/css/jquery.dataTables_themeroller.min.css
 .DS_Store
 Plugins
+
+# Leafletjs
+node_modules
+.DS_Store
+tmp/**/*
+.idea
+.idea/**/*
+*.iml
+_site
+*.sublime-*
+_site
+dist/
+coverage/
+*.js.html
+.mailmap
+component.json
+debug/local/
+yarn.lock
+*.log
+.eslintcache
+.vitest-attachments/
+__screenshots__/
