@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Worldwide trend &middot; OS market share</title>
+  <meta name="description" content="Monthly worldwide operating system market share, Sept 2023 to Aug 2026, with a per-country drill-down for any OS.">
+  <meta name="theme-color" content="#0b0b0a" id="theme-color-meta">
+
+  <script>
+    (function () {
+      var saved = localStorage.getItem('main-siteproj-theme');
+      var theme = saved || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
+      document.documentElement.setAttribute('data-theme', theme);
+    })();
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+
+  <header class="chrome-bar">
+    <div class="chrome-left">
+      <div class="traffic-lights" aria-hidden="true">
+        <span class="tl-red"></span>
+        <span class="tl-yellow"></span>
+        <span class="tl-green"></span>
+      </div>
+      <span class="chrome-title">isaac@tekkiech: ~/main-siteproj/trend &middot; zsh</span>
+    </div>
+    <nav class="chrome-right">
+      <a href="/" class="chrome-nav-link">~</a>
+      <a href="/trend/" class="chrome-nav-link">--trend</a>
+      <a href="/map/" class="chrome-nav-link">--map</a>
+      <a href="/table/" class="chrome-nav-link">--table</a>
+      <a href="/about/" class="chrome-nav-link">--about</a>
+      <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle light and dark theme">
+        &middot; <span id="theme-label">dark</span>
+      </button>
+    </nav>
+  </header>
+
+  <main class="page">
+    <section class="reveal-block" aria-labelledby="trend-heading">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj/trend % <span class="accent">cat trend.json</span></div>
+      <div class="reveal-block__header">
+        <h1 id="trend-heading">Worldwide trend</h1>
+        <p>Monthly share by operating system, Sept 2023 &ndash; Aug 2026. Click a legend key for a country breakdown.</p>
+      </div>
+      <div class="chart-wrap">
+        <canvas id="trend-chart" role="img" aria-label="Line chart of worldwide operating system market share by month"></canvas>
+      </div>
+    </section>
+
+    <section id="drilldown" class="reveal-block" aria-labelledby="drilldown-heading">
+      <div class="prompt-line">isaac@tekkiech ~/main-siteproj/trend % <span class="accent" id="drilldown-command">grep --by-os</span></div>
+      <div class="reveal-block__header">
+        <h2 id="drilldown-heading">Top countries<span id="drilldown-os"></span></h2>
+        <p id="drilldown-hint">Click a key in the legend above to see which countries lead in that OS.</p>
+      </div>
+      <div class="chart-wrap chart-wrap--drilldown" id="drilldown-chart-wrap" hidden>
+        <canvas id="drilldown-chart" role="img" aria-label="Bar chart of the top ten countries by share for the selected operating system"></canvas>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    isaac@tekkiech ~/main-siteproj/trend % <span class="accent">cd ..</span> &middot; <a href="/">back to ~/main-siteproj</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js" defer></script>
+  <script type="module" src="script.js"></script>
+</body>
+</html>
