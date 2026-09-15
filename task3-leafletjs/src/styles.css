@@ -123,6 +123,17 @@ body {
   font-size: 0.85em;
 }
 
+.page__outro-source {
+  margin: 10px 0 0;
+  max-width: 78ch;
+  font-size: 0.8rem;
+  color: var(--neh-text-muted);
+}
+
+.page__outro-source a {
+  color: var(--neh-text-muted);
+}
+
 /* Map layout: legend + map side by side on wide screens, stacked on narrow */
 .map-shell {
   display: grid;
@@ -234,8 +245,15 @@ body {
 
 .swatch--zone {
   border-radius: 3px;
-  background: rgba(51, 163, 140, 0.18);
-  box-shadow: 0 0 0 1px var(--neh-teal);
+  background: rgba(237, 17, 99, 0.14);
+  box-shadow: 0 0 0 1px var(--neh-accent);
+}
+
+.map-legend__note {
+  margin: 4px 0 14px;
+  font-size: 0.78rem;
+  line-height: 1.4;
+  color: var(--neh-text-muted);
 }
 
 /* ---- Leaflet element overrides ---- */
