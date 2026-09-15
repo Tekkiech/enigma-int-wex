@@ -711,6 +711,14 @@ table.dataTable > tbody > tr.child span.dtr-title {
     padding: 1rem;
   }
 
+  /* The legend wraps onto a second row below this width, and the chart
+     canvas fills whatever height this container gives it - without more
+     room here, Chart.js squeezes the now-taller legend and the plot
+     into the same fixed height, eating the spacing between them. */
+  .chart-wrap {
+    height: clamp(380px, 100vw, 460px);
+  }
+
   #map {
     height: clamp(320px, 60vh, 480px);
   }
