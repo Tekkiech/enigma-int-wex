@@ -1,29 +1,50 @@
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { schemes, zones } from './data.js';
+import { networks, zones } from './data.js';
 
-const STATUS = {
-  operational: { label: 'Operational', color: '#33a38c' },
-  planned: { label: 'Planned', color: '#ed1163' },
-  feasibility: { label: 'Feasibility study', color: '#00478a' },
+const NETWORK_TYPE = {
+  communal: { label: 'Communal heating', color: '#33a38c' },
+  district: { label: 'District heating', color: '#00478a' },
 };
+
+// Nudges the district marker off the communal one at the same local
+// authority point so both are visible rather than fully overlapping.
+const DISTRICT_OFFSET = [0.014, -0.009];
 
 const FLAME_PATH =
   'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z';
 
-function buildIcon(status) {
-  const color = STATUS[status].color;
+// All 14 local-authority/network-type counts in the dataset span 2 to
+// 231; map that range onto a 9-20px radius so marker size stays a fair
+// read of scale (area-proportional, hence the square root) without a
+// couple of outliers dwarfing everything else.
+const COUNT_DOMAIN = [2, 231];
+const RADIUS_RANGE = [9, 20];
+
+function radiusForCount(count) {
+  const [minC, maxC] = COUNT_DOMAIN;
+  const [minR, maxR] = RADIUS_RANGE;
+  const t = (Math.sqrt(count) - Math.sqrt(minC)) / (Math.sqrt(maxC) - Math.sqrt(minC));
+  return minR + Math.max(0, Math.min(1, t)) * (maxR - minR);
+}
+
+function buildIcon(type, count) {
+  const color = NETWORK_TYPE[type].color;
+  const r = radiusForCount(count);
+  const size = r * 2;
+  const iconPx = Math.round(size * 0.5);
+
   return L.divIcon({
     className: 'heat-marker',
     html: `
-      <span class="heat-marker__dot" style="background:${color}">
-        <svg viewBox="0 0 24 24" width="13" height="13" fill="#fff">
+      <span class="heat-marker__dot" style="background:${color}; width:${size}px; height:${size}px;">
+        <svg viewBox="0 0 24 24" width="${iconPx}" height="${iconPx}" fill="#fff">
           <path d="${FLAME_PATH}" />
         </svg>
       </span>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
-    popupAnchor: [0, -12],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    popupAnchor: [0, -size / 2],
   });
 }
 
@@ -53,46 +74,64 @@ L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
 
 const zoneLayer = L.geoJSON(zones, {
   style: {
-    color: '#33a38c',
+    color: '#ed1163',
     weight: 1.5,
     dashArray: '6 4',
-    fillColor: '#33a38c',
-    fillOpacity: 0.12,
+    fillColor: '#ed1163',
+    fillOpacity: 0.1,
   },
   onEachFeature: (feature, layer) => {
     layer.bindTooltip(feature.properties.name, { sticky: true, className: 'heat-tooltip' });
   },
 }).addTo(map);
 
-const statusLayers = {
-  operational: L.layerGroup(),
-  planned: L.layerGroup(),
-  feasibility: L.layerGroup(),
+const networkLayers = {
+  communal: L.layerGroup(),
+  district: L.layerGroup(),
 };
 
-schemes.features.forEach((feature) => {
+function customerLine(customers) {
+  const parts = [];
+  if (customers.residential) parts.push(`${customers.residential.toLocaleString()} residential`);
+  if (customers.commercial) parts.push(`${customers.commercial.toLocaleString()} commercial`);
+  if (customers.industrial) parts.push(`${customers.industrial.toLocaleString()} industrial`);
+  if (customers.public) parts.push(`${customers.public.toLocaleString()} public sector`);
+  if (customers.other) parts.push(`${customers.other.toLocaleString()} other`);
+  return parts.join(', ');
+}
+
+networks.features.forEach((feature) => {
   const [lng, lat] = feature.geometry.coordinates;
   const p = feature.properties;
-  const marker = L.marker([lat, lng], { icon: buildIcon(p.status) });
+  const total = p.communal + p.district;
 
-  marker.bindPopup(`
-    <div class="heat-popup">
-      <span class="heat-popup__badge" style="background:${STATUS[p.status].color}">${STATUS[p.status].label}</span>
-      <h3>${p.name}</h3>
-      <p class="heat-popup__meta">${p.localAuthority} &middot; ${p.capacity}</p>
-      <p>${p.description}</p>
-      ${p.connectedBuildings ? `<p class="heat-popup__meta">${p.connectedBuildings} connected buildings</p>` : ''}
-    </div>
-  `);
+  ['communal', 'district'].forEach((type) => {
+    const count = p[type];
+    if (!count) return;
 
-  statusLayers[p.status].addLayer(marker);
+    const otherType = type === 'communal' ? 'district' : 'communal';
+    const [dLng, dLat] = type === 'district' ? DISTRICT_OFFSET : [0, 0];
+    const marker = L.marker([lat + dLat, lng + dLng], { icon: buildIcon(type, count) });
+
+    marker.bindPopup(`
+      <div class="heat-popup">
+        <span class="heat-popup__badge" style="background:${NETWORK_TYPE[type].color}">${NETWORK_TYPE[type].label}</span>
+        <h3>${p.localAuthority}</h3>
+        <p class="heat-popup__meta">${count} registered ${NETWORK_TYPE[type].label.toLowerCase()} network${count === 1 ? '' : 's'} &middot; December 2022</p>
+        <p class="heat-popup__meta">${p[otherType]} ${NETWORK_TYPE[otherType].label.toLowerCase()} &middot; ${total} registered networks in total</p>
+        <p>${p.customers.total.toLocaleString()} customers served: ${customerLine(p.customers)}.</p>
+      </div>
+    `);
+
+    networkLayers[type].addLayer(marker);
+  });
 });
 
-Object.values(statusLayers).forEach((layer) => layer.addTo(map));
+Object.values(networkLayers).forEach((layer) => layer.addTo(map));
 
-document.querySelectorAll('[data-status-filter]').forEach((checkbox) => {
+document.querySelectorAll('[data-network-filter]').forEach((checkbox) => {
   checkbox.addEventListener('change', () => {
-    const layer = statusLayers[checkbox.dataset.statusFilter];
+    const layer = networkLayers[checkbox.dataset.networkFilter];
     if (checkbox.checked) {
       layer.addTo(map);
     } else {

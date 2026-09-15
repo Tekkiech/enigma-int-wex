@@ -23,9 +23,9 @@
       <p class="breadcrumb">Evidence by theme / Net zero</p>
       <h1>Heat networks across the North East</h1>
       <p>
-        District and communal heat network schemes across the North East, from operational
-        networks through to areas being assessed for feasibility. Use the filters to show or
-        hide schemes by status, and tap a marker for details.
+        Registered communal and district heat networks by North East local authority, as of
+        December 2022. Circle size shows the number of registered networks; use the filters
+        to show or hide network types, and tap a marker for the local authority's full figures.
       </p>
     </div>
 
@@ -38,21 +38,16 @@
 
         <div class="map-legend__body">
           <fieldset class="map-legend__group">
-            <legend>Scheme status</legend>
+            <legend>Network type</legend>
             <label class="map-legend__option">
-              <input type="checkbox" data-status-filter="operational" checked>
+              <input type="checkbox" data-network-filter="communal" checked>
               <span class="swatch" style="background:#33a38c"></span>
-              Operational
+              Communal heating
             </label>
             <label class="map-legend__option">
-              <input type="checkbox" data-status-filter="planned" checked>
-              <span class="swatch" style="background:#ed1163"></span>
-              Planned
-            </label>
-            <label class="map-legend__option">
-              <input type="checkbox" data-status-filter="feasibility" checked>
+              <input type="checkbox" data-network-filter="district" checked>
               <span class="swatch" style="background:#00478a"></span>
-              Feasibility study
+              District heating
             </label>
           </fieldset>
 
@@ -61,9 +56,11 @@
             <label class="map-legend__option">
               <input type="checkbox" data-zone-toggle checked>
               <span class="swatch swatch--zone"></span>
-              Opportunity areas
+              Zoning pilot area
             </label>
           </fieldset>
+
+          <p class="map-legend__note">Circle size = number of registered networks (2&ndash;231 across the region).</p>
         </div>
       </details>
 
@@ -75,15 +72,18 @@
     <div class="page__outro">
       <h2>About this data</h2>
       <p>
-        The map reads a GeoJSON <code>FeatureCollection</code>: point features for individual
-        schemes (name, status, capacity, local authority, connected buildings) and polygon
-        features for wider heat network opportunity areas &mdash; the same shape used by
-        DESNZ's Heat Network Zoning Pilot, which named Newcastle and Gateshead as one of its
-        pilot areas. The pre-prod page this task is based on sits behind NELEP's staff login,
-        so the figures shown here are illustrative placeholders assembled for this exercise
-        rather than the production dataset. Everything the map draws comes from
-        <code>src/data.js</code>, so pointing it at a different dataset &mdash; bus stops,
-        planning applications, flood zones &mdash; needs no other code changes.
+        Network counts and customer figures are from DESNZ's "Heat Networks registered under
+        the Heat Network (Metering and Billing) Regulations", December 2022. That register
+        publishes counts per local authority, not individual scheme names or addresses, so each
+        marker here represents a whole local authority rather than a single site. The dashed
+        outline is DESNZ's separate Heat Network Zoning Pilot area, which covers Newcastle and
+        Gateshead; its boundary is an illustrative approximation, not traced from the pilot's own
+        GIS output. The map itself reads a GeoJSON <code>FeatureCollection</code> from
+        <code>src/data.js</code>, so pointing it at a different release, or at scheme-level data
+        if that becomes available, needs no other code changes.
+      </p>
+      <p class="page__outro-source">
+        Source: <a href="https://www.data.gov.uk/dataset/f547129e-a722-4992-9f37-baa3b1a516a7/heat-networks-registered-under-the-heat-network-metering-and-billing-regulations">DESNZ, Heat Networks registered under the Heat Network (Metering and Billing) Regulations</a>, December 2022 release, tables 1.2b and 1.3c.
       </p>
     </div>
   </main>
