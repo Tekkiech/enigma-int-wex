@@ -21,7 +21,7 @@
 
   <link rel="stylesheet" href="../styles.css">
 </head>
-<body>
+<body data-base="../" data-page="map">
 
   <header class="chrome-bar">
     <div class="chrome-left">
@@ -33,11 +33,11 @@
       <span class="chrome-title">isaac@tekkiech: ~/main-siteproj/map &middot; zsh</span>
     </div>
     <nav class="chrome-right">
-      <a href="/" class="chrome-nav-link">~</a>
-      <a href="/trend/" class="chrome-nav-link">--trend</a>
-      <a href="/map/" class="chrome-nav-link">--map</a>
-      <a href="/table/" class="chrome-nav-link">--table</a>
-      <a href="/about/" class="chrome-nav-link">--about</a>
+      <a href="#" data-nav="home" class="chrome-nav-link">~</a>
+      <a href="#" data-nav="trend" class="chrome-nav-link">--trend</a>
+      <a href="#" data-nav="map" class="chrome-nav-link">--map</a>
+      <a href="#" data-nav="table" class="chrome-nav-link">--table</a>
+      <a href="#" data-nav="about" class="chrome-nav-link">--about</a>
       <button id="theme-toggle" class="theme-toggle-btn" aria-label="Toggle light and dark theme">
         &middot; <span id="theme-label">dark</span>
       </button>
@@ -61,7 +61,7 @@
   </main>
 
   <footer class="site-footer">
-    isaac@tekkiech ~/main-siteproj/map % <span class="accent">cd ..</span> &middot; <a href="/">back to ~/main-siteproj</a>
+    isaac@tekkiech ~/main-siteproj/map % <span class="accent">cd ..</span> &middot; <a href="#" data-nav="home">back to ~/main-siteproj</a>
   </footer>
 
   <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js" defer></script>
