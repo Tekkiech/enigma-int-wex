@@ -1,6 +1,7 @@
 {
-  "name": "vuejs-testing",
+  "name": "task4-vuejs",
   "version": "1.0.0",
+  "private": true,
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -8,10 +9,15 @@
     "build": "parcel build src/index.html"
   },
   "devDependencies": {
-    "@types/leaflet": "^1.9.0",
+    "@parcel/transformer-vue": "^2.12.0",
+    "@vue/compiler-sfc": "^3.5.0",
     "parcel": "^2.12.0"
   },
   "dependencies": {
-    "leaflet": "^1.9.4"
+    "@fontsource/ibm-plex-mono": "^5.1.0",
+    "@fontsource/work-sans": "^5.1.0",
+    "pinia": "^2.2.0",
+    "vue": "^3.5.0",
+    "vue-router": "^4.4.0"
   }
 }
