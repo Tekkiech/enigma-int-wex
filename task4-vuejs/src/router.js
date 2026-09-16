@@ -1,6 +1,11 @@
 import { createRouter, createWebHashHistory } from 'vue-router';
-import ProductListView from './views/ProductListView.vue';
+import HomeView from './views/HomeView.vue';
+import CategoryView from './views/CategoryView.vue';
 import ProductDetailView from './views/ProductDetailView.vue';
+import SearchView from './views/SearchView.vue';
+import DealsView from './views/DealsView.vue';
+import SavedView from './views/SavedView.vue';
+import AccountView from './views/AccountView.vue';
 import CartView from './views/CartView.vue';
 import NotFoundView from './views/NotFoundView.vue';
 
@@ -9,8 +14,13 @@ import NotFoundView from './views/NotFoundView.vue';
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [
-    { path: '/', name: 'products', component: ProductListView },
+    { path: '/', name: 'home', component: HomeView },
+    { path: '/category/:slug', name: 'category', component: CategoryView, props: true },
     { path: '/product/:id(\\d+)', name: 'product', component: ProductDetailView, props: true },
+    { path: '/search', name: 'search', component: SearchView },
+    { path: '/deals', name: 'deals', component: DealsView },
+    { path: '/saved', name: 'saved', component: SavedView },
+    { path: '/account', name: 'account', component: AccountView },
     { path: '/cart', name: 'cart', component: CartView },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
   ],

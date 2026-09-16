@@ -1,6 +1,12 @@
 import { defineStore } from 'pinia';
-import { fetchGroceries } from '../api/dummyjson.js';
-import { chipForProduct } from '../data/categoryChips.js';
+import { fetchAllProducts } from '../api/dummyjson.js';
+import { buildCategoryChips } from '../data/categoryChips.js';
+
+const DEAL_THRESHOLD = 15; // % discount or higher counts as a "deal"
+
+function humanizeSlug(slug) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 export const useCatalogStore = defineStore('catalog', {
   state: () => ({
@@ -34,32 +40,65 @@ export const useCatalogStore = defineStore('catalog', {
       return this.cartItems.reduce((sum, line) => sum + line.product.price * line.quantity, 0);
     },
 
-    visibleProducts(state) {
-      const query = state.query.trim().toLowerCase();
-      let list = state.products.filter((product) => {
-        const matchesQuery = !query || product.title.toLowerCase().includes(query);
-        const matchesChip = state.chip === 'All' || chipForProduct(product) === state.chip;
-        return matchesQuery && matchesChip;
-      });
-
-      list = [...list];
-      if (state.sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
-      else if (state.sortBy === 'price-desc') list.sort((a, b) => b.price - a.price);
-      else if (state.sortBy === 'rating') list.sort((a, b) => b.rating - a.rating);
-
-      return list;
-    },
-
     productById: (state) => (id) => state.products.find((product) => product.id === Number(id)),
 
-    relatedTo: (state) => (product, limit = 4) => {
-      const chip = chipForProduct(product);
-      const sameChip = state.products.filter((p) => p.id !== product.id && chipForProduct(p) === chip);
-      const rest = state.products.filter((p) => p.id !== product.id && chipForProduct(p) !== chip);
-      return [...sameChip, ...rest].slice(0, limit);
+    isWishlisted: (state) => (id) => Boolean(state.wishlist[id]),
+
+    savedProducts: (state) => state.products.filter((product) => state.wishlist[product.id]),
+
+    // DummyJSON's category display names are just Title Case of the slug
+    // for all 24 categories, so there's no need for a separate lookup call.
+    categoryName: () => (slug) => humanizeSlug(slug),
+
+    categories(state) {
+      const counts = {};
+      for (const product of state.products) counts[product.category] = (counts[product.category] || 0) + 1;
+      return Object.entries(counts)
+        .map(([slug, count]) => ({ slug, name: humanizeSlug(slug), count }))
+        .sort((a, b) => a.name.localeCompare(b.name));
     },
 
-    isWishlisted: (state) => (id) => Boolean(state.wishlist[id]),
+    productsInCategory: (state) => (slug) => state.products.filter((product) => product.category === slug),
+
+    chipsForCategory() {
+      return (slug) => buildCategoryChips(this.productsInCategory(slug));
+    },
+
+    visibleProducts() {
+      return (slug) => {
+        const { classify } = this.chipsForCategory(slug);
+        const query = this.query.trim().toLowerCase();
+
+        let list = this.productsInCategory(slug).filter((product) => {
+          const matchesQuery = !query || product.title.toLowerCase().includes(query);
+          const matchesChip = this.chip === 'All' || classify(product) === this.chip;
+          return matchesQuery && matchesChip;
+        });
+
+        list = [...list];
+        if (this.sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
+        else if (this.sortBy === 'price-desc') list.sort((a, b) => b.price - a.price);
+        else if (this.sortBy === 'rating') list.sort((a, b) => b.rating - a.rating);
+
+        return list;
+      };
+    },
+
+    relatedTo: (state) => (product, limit = 4) =>
+      state.products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, limit),
+
+    dealsProducts: (state) =>
+      state.products
+        .filter((product) => product.discountPercentage >= DEAL_THRESHOLD)
+        .sort((a, b) => b.discountPercentage - a.discountPercentage),
+
+    searchResults() {
+      return (query) => {
+        const q = query.trim().toLowerCase();
+        if (!q) return [];
+        return this.products.filter((product) => product.title.toLowerCase().includes(q));
+      };
+    },
   },
 
   actions: {
@@ -68,7 +107,7 @@ export const useCatalogStore = defineStore('catalog', {
       this.loading = true;
       this.error = null;
       try {
-        this.products = await fetchGroceries();
+        this.products = await fetchAllProducts();
       } catch (err) {
         this.error = err.message;
       } finally {
@@ -86,6 +125,12 @@ export const useCatalogStore = defineStore('catalog', {
 
     setSortBy(sortBy) {
       this.sortBy = sortBy;
+    },
+
+    resetFilters() {
+      this.query = '';
+      this.chip = 'All';
+      this.sortBy = 'featured';
     },
 
     toggleWishlist(id) {

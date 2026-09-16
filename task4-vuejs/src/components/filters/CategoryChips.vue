@@ -1,8 +1,7 @@
 <script setup>
-import { CHIPS } from '../../data/categoryChips.js';
-
 defineProps({
   modelValue: { type: String, required: true },
+  chips: { type: Array, required: true },
 });
 defineEmits(['update:modelValue']);
 </script>
@@ -10,7 +9,7 @@ defineEmits(['update:modelValue']);
 <template>
   <div class="chip-row">
     <button
-      v-for="chip in CHIPS"
+      v-for="chip in chips"
       :key="chip"
       type="button"
       class="chip"

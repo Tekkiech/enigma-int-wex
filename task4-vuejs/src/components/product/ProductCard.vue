@@ -29,6 +29,7 @@ const catalog = useCatalogStore();
       </template>
     </div>
     <div class="product-card__body">
+      <p v-if="!compact" class="product-card__category">{{ product.brand || catalog.categoryName(product.category) }}</p>
       <h3 class="product-card__name">{{ product.title }}</h3>
       <p v-if="!compact" class="product-card__rating">{{ product.rating.toFixed(1) }} ★ Rating</p>
       <ProductPrice :price="product.price" :discount-percentage="compact ? 0 : product.discountPercentage" />

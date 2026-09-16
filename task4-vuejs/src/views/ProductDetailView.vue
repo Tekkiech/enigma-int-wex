@@ -10,6 +10,7 @@ import ProductGallery from '../components/product/ProductGallery.vue';
 import ProductPrice from '../components/product/ProductPrice.vue';
 import QuantityStepper from '../components/product/QuantityStepper.vue';
 import DeliveryInfo from '../components/product/DeliveryInfo.vue';
+import WishlistButton from '../components/product/WishlistButton.vue';
 import ProductSpecs from '../components/product/ProductSpecs.vue';
 import ProductReviews from '../components/product/ProductReviews.vue';
 import RelatedProducts from '../components/product/RelatedProducts.vue';
@@ -34,8 +35,12 @@ function buyNow() {
 }
 
 const breadcrumbItems = computed(() => {
-  if (!product.value) return [{ label: 'Home', to: '/' }, { label: 'Groceries', to: '/' }];
-  return [{ label: 'Home', to: '/' }, { label: 'Groceries', to: '/' }, { label: product.value.title }];
+  if (!product.value) return [{ label: 'Home', to: '/' }];
+  return [
+    { label: 'Home', to: '/' },
+    { label: catalog.categoryName(product.value.category), to: { name: 'category', params: { slug: product.value.category } } },
+    { label: product.value.title },
+  ];
 });
 </script>
 
@@ -52,8 +57,13 @@ const breadcrumbItems = computed(() => {
         <ProductGallery :images="product.images" :title="product.title" />
 
         <div class="detail-view__info">
-          <p class="detail-view__brand">{{ product.brand || 'TEKKIECH.MARKET' }}</p>
-          <h1>{{ product.title }}</h1>
+          <div class="detail-view__title-row">
+            <div>
+              <p class="detail-view__brand">{{ product.brand || 'TEKKIECH.MARKET' }}</p>
+              <h1>{{ product.title }}</h1>
+            </div>
+            <WishlistButton :active="catalog.isWishlisted(product.id)" @toggle="catalog.toggleWishlist(product.id)" />
+          </div>
           <p class="detail-view__meta">
             {{ product.rating.toFixed(1) }} ★ · {{ product.availabilityStatus || (product.stock > 0 ? 'In stock' : 'Out of stock') }}
           </p>
