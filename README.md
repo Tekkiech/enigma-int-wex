@@ -1,5 +1,3 @@
-Here is the refined, clear, and professionally structured `README.md` file for the repository:
-
 # enigma-int-wex
 
 Front-end development deliverables from a technical placement at Enigma Interactive. The repository contains four standalone task modules alongside an integrated multi-page analytics platform that combines all three visualization libraries around a single global dataset. Each module uses [Parcel](https://parceljs.org/) as its build tool and development server.
