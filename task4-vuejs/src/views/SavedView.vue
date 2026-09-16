@@ -27,7 +27,7 @@ onMounted(() => catalog.fetchProducts());
       <section v-if="catalog.savedProducts.length" class="product-grid">
         <ProductCard v-for="product in catalog.savedProducts" :key="product.id" :product="product" />
       </section>
-      <EmptyState v-else message="Nothing saved yet — tap the star on a product to save it here.">
+      <EmptyState v-else message="Nothing saved yet. Tap the star on a product to save it here.">
         <RouterLink to="/" class="button button--solid">Browse categories</RouterLink>
       </EmptyState>
     </template>

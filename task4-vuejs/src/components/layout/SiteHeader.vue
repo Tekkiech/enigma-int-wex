@@ -40,6 +40,7 @@ watch(
       <nav class="site-header__nav">
         <RouterLink to="/">Home</RouterLink>
         <RouterLink to="/deals">Deals</RouterLink>
+        <RouterLink to="/support">Support</RouterLink>
         <RouterLink to="/account">Account</RouterLink>
       </nav>
 

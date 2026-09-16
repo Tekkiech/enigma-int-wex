@@ -3,6 +3,7 @@ import { computed, onMounted, watch } from 'vue';
 import { useCatalogStore } from '../stores/catalog.js';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 import CategoryChips from '../components/filters/CategoryChips.vue';
+import SearchField from '../components/filters/SearchField.vue';
 import SortSelect from '../components/filters/SortSelect.vue';
 import ProductCard from '../components/product/ProductCard.vue';
 import LoadingState from '../components/common/LoadingState.vue';
@@ -37,7 +38,10 @@ const products = computed(() => catalog.visibleProducts(props.slug));
 
     <div class="list-view__controls">
       <CategoryChips :model-value="catalog.chip" :chips="chips" @update:model-value="catalog.setChip" />
-      <SortSelect :model-value="catalog.sortBy" @update:model-value="catalog.setSortBy" />
+      <div class="list-view__controls-secondary">
+        <SearchField :model-value="catalog.query" label="Search" placeholder="Search this category…" @update:model-value="catalog.setQuery" />
+        <SortSelect :model-value="catalog.sortBy" @update:model-value="catalog.setSortBy" />
+      </div>
     </div>
 
     <LoadingState v-if="catalog.loading" label="Loading products…" />

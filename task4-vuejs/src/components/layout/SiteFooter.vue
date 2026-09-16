@@ -1,23 +1,24 @@
-<script setup></script>
+<script setup>
+import { RouterLink } from 'vue-router';
+</script>
 
 <template>
   <footer class="site-footer">
     <div class="site-footer__grid">
       <div>
         <div class="site-footer__brand">TEKKIECH.MARKET</div>
-        Fresh groceries, delivered fast.
       </div>
       <div class="site-footer__col">
         <div class="site-footer__heading">Shop</div>
-        <span>All Products</span>
-        <span>Deals</span>
+        <RouterLink to="/">All Products</RouterLink>
+        <RouterLink to="/deals">Deals</RouterLink>
         <span>New Arrivals</span>
       </div>
       <div class="site-footer__col">
         <div class="site-footer__heading">Support</div>
-        <span>Delivery Info</span>
-        <span>Returns</span>
-        <span>Contact Us</span>
+        <RouterLink :to="{ name: 'support', hash: '#delivery' }">Delivery Info</RouterLink>
+        <RouterLink :to="{ name: 'support', hash: '#returns' }">Returns</RouterLink>
+        <RouterLink :to="{ name: 'support', hash: '#contact' }">Contact Us</RouterLink>
       </div>
       <div class="site-footer__col">
         <div class="site-footer__heading">Data</div>

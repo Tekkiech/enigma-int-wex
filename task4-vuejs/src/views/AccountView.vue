@@ -26,7 +26,7 @@ function submit() {
       <div class="account-card__details">
         <h2>{{ account.user.name }}</h2>
         <p class="account-card__email">{{ account.user.email }}</p>
-        <p class="account-card__since">Member since today — this is a demo account, nothing is saved once you leave.</p>
+        <p class="account-card__since">Member since today. This is a demo account, nothing is saved once you leave.</p>
 
         <dl class="account-card__stats">
           <div>
@@ -45,7 +45,7 @@ function submit() {
 
     <form v-else class="account-form" @submit.prevent="submit">
       <p class="account-form__intro">
-        There's no real login here — fill in anything (or leave it blank for a placeholder "John Doe" account) and continue.
+        There's no real login here: fill in anything (or leave it blank for a placeholder "John Doe" account) and continue.
       </p>
 
       <label class="field">

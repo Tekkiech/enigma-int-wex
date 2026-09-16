@@ -3,6 +3,7 @@ import { fetchAllProducts } from '../api/dummyjson.js';
 import { buildCategoryChips } from '../data/categoryChips.js';
 
 const DEAL_THRESHOLD = 15; // % discount or higher counts as a "deal"
+const CATEGORY_TILE_IMAGE_LIMIT = 4; // how many product thumbnails a home tile cycles through
 
 function humanizeSlug(slug) {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
@@ -51,11 +52,14 @@ export const useCatalogStore = defineStore('catalog', {
     categoryName: () => (slug) => humanizeSlug(slug),
 
     categories(state) {
-      const counts = {};
-      for (const product of state.products) counts[product.category] = (counts[product.category] || 0) + 1;
-      return Object.entries(counts)
-        .map(([slug, count]) => ({ slug, name: humanizeSlug(slug), count }))
-        .sort((a, b) => a.name.localeCompare(b.name));
+      const bySlug = {};
+      for (const product of state.products) {
+        bySlug[product.category] ??= { slug: product.category, name: humanizeSlug(product.category), count: 0, images: [] };
+        const entry = bySlug[product.category];
+        entry.count += 1;
+        if (entry.images.length < CATEGORY_TILE_IMAGE_LIMIT) entry.images.push(product.thumbnail);
+      }
+      return Object.values(bySlug).sort((a, b) => a.name.localeCompare(b.name));
     },
 
     productsInCategory: (state) => (slug) => state.products.filter((product) => product.category === slug),
@@ -87,10 +91,20 @@ export const useCatalogStore = defineStore('catalog', {
     relatedTo: (state) => (product, limit = 4) =>
       state.products.filter((p) => p.id !== product.id && p.category === product.category).slice(0, limit),
 
-    dealsProducts: (state) =>
-      state.products
-        .filter((product) => product.discountPercentage >= DEAL_THRESHOLD)
-        .sort((a, b) => b.discountPercentage - a.discountPercentage),
+    dealsProducts() {
+      const query = this.query.trim().toLowerCase();
+      let list = this.products.filter(
+        (product) => product.discountPercentage >= DEAL_THRESHOLD && (!query || product.title.toLowerCase().includes(query))
+      );
+
+      list = [...list];
+      if (this.sortBy === 'price-asc') list.sort((a, b) => a.price - b.price);
+      else if (this.sortBy === 'price-desc') list.sort((a, b) => b.price - a.price);
+      else if (this.sortBy === 'rating') list.sort((a, b) => b.rating - a.rating);
+      else list.sort((a, b) => b.discountPercentage - a.discountPercentage); // "featured" = biggest discount first
+
+      return list;
+    },
 
     searchResults() {
       return (query) => {
