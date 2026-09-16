@@ -45,6 +45,17 @@ npm run dev   # Parcel dev server
 npm run build # production build
 ```
 
+## task4-vuejs
+
+
+
+```bash
+cd task4-vuejs
+npm install
+npm run dev   # Parcel dev server
+npm run build # production build
+```
+
 ## main-siteproj
 
 A small multi-page site combining all three libraries around a single real dataset: worldwide operating system market share from [StatCounter Global Stats](https://gs.statcounter.com/os-market-share). A landing page links out to three dedicated pages, each its own Parcel entry point: `/trend` (a [Chart.js](https://www.chartjs.org/) line chart of the 36-month worldwide trend, with a clickable legend that drills into a "top 10 countries for this OS" bar chart), `/map` (a [Leaflet](https://leafletjs.com/) choropleth of the leading OS per country, full breakdown in each popup), and `/table` (a [DataTables](https://datatables.net/) listing of all 175 tracked countries and territories, sortable, searchable, responsive down to mobile), plus `/about` for where the numbers come from. The same seven-colour OS key is used everywhere, so a colour means the same thing on every page.
