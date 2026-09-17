@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from flask import Flask, jsonify, request, session
 from flask_cors import CORS
-from sqlalchemy import func, select
+from sqlalchemy import func, select, text
 from sqlalchemy.orm import selectinload
 
 from auth import (
@@ -394,6 +394,68 @@ def list_orders():
             )
         ).all()
         return jsonify([order_to_dict(order) for order in orders])
+
+
+# --- metrics (synthetic dashboard data, public, read-only) ----------------
+
+
+@app.get("/api/metrics/orders")
+def metrics_orders():
+    """Backs the /metrics dashboard. synthetic_shopper/synthetic_order/
+    synthetic_order_line live in this same SQLite file but aren't part of
+    this app's Alembic-managed schema - see analytics/generate.py, the
+    only thing that ever writes them. If that script hasn't been run yet,
+    the tables don't exist and this returns an empty list rather than a
+    500.
+    """
+    with SessionLocal() as db:
+        exists = db.scalar(
+            text("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'synthetic_order_line'")
+        )
+        if not exists:
+            return jsonify([])
+
+        rows = db.execute(
+            text(
+                """
+                SELECT
+                    o.id AS order_id, o.order_date AS date,
+                    s.id AS shopper_id, s.name AS shopper_name, s.persona AS persona,
+                    s.city AS city, s.region AS region, s.lat AS lat, s.lng AS lng,
+                    p.id AS product_id, p.title AS title, c.slug AS category, p.price AS price,
+                    l.quantity AS quantity, l.is_outlier AS is_outlier
+                FROM synthetic_order_line l
+                JOIN synthetic_order o ON l.order_id = o.id
+                JOIN synthetic_shopper s ON o.shopper_id = s.id
+                JOIN product p ON l.product_id = p.id
+                JOIN category c ON p.category_id = c.id
+                """
+            )
+        ).mappings().all()
+
+        return jsonify(
+            [
+                {
+                    "orderId": row["order_id"],
+                    "date": row["date"],
+                    "userId": row["shopper_id"],
+                    "shopperName": row["shopper_name"],
+                    "persona": row["persona"],
+                    "city": row["city"],
+                    "region": row["region"],
+                    "lat": row["lat"],
+                    "lng": row["lng"],
+                    "productId": row["product_id"],
+                    "title": row["title"],
+                    "category": row["category"],
+                    "price": num(row["price"]),
+                    "quantity": row["quantity"],
+                    "lineTotal": round(row["price"] * row["quantity"], 2),
+                    "isOutlier": bool(row["is_outlier"]),
+                }
+                for row in rows
+            ]
+        )
 
 
 if __name__ == "__main__":

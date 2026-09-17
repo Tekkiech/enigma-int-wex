@@ -1,16 +1,13 @@
 // Aggregation over the synthetic order-history dataset - see
-// task4-vuejs/analytics/ for how it's generated. Imported directly as JSON
-// (Parcel inlines it at build time) rather than fetched at runtime: it's a
-// static demo dataset, not something that changes between page loads.
-import records from '../../analytics/synthetic-orders.json';
+// task4-vuejs/analytics/ for how it's generated and GET /api/metrics/orders
+// (server/app.py) for how it's served. Every function here is a pure
+// function of a records array passed in by the caller (fetched once in
+// MetricsView.vue) - nothing in this module holds its own copy of the
+// data, unlike the old build-time JSON import this replaced.
 
 const MONTH_LABEL = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short' });
 
-export function allRecords() {
-  return records;
-}
-
-export function personaList() {
+export function personaList(records) {
   return [...new Set(records.map((r) => r.persona))].sort();
 }
 
@@ -32,9 +29,10 @@ export function computeKpis(list) {
 
 // One point per calendar month across the dataset's full span, in order -
 // including months with zero activity for the current filter, so a line
-// chart doesn't silently skip a persona's quiet months.
-export function monthlySeries(list) {
-  const allMonths = [...new Set(records.map((r) => r.date.slice(0, 7)))].sort();
+// chart doesn't silently skip a persona's quiet months. allRecords sets
+// the span; list (the current filter) fills in the values.
+export function monthlySeries(list, allRecords) {
+  const allMonths = [...new Set(allRecords.map((r) => r.date.slice(0, 7)))].sort();
   const byMonth = new Map(allMonths.map((month) => [month, { revenue: 0, orders: new Set() }]));
 
   for (const r of list) {
@@ -72,8 +70,8 @@ export function categoryBreakdown(list, topN = 8) {
 // Always computed against the full dataset, independent of the persona
 // filter - filtering this chart down to one persona would just draw a
 // single bar, which defeats its point (comparing personas against each
-// other).
-export function personaBreakdown() {
+// other). Callers pass the unfiltered records for that reason.
+export function personaBreakdown(records) {
   const totals = new Map();
   for (const r of records) totals.set(r.persona, (totals.get(r.persona) || 0) + r.lineTotal);
   return [...totals.entries()].sort((a, b) => b[1] - a[1]).map(([persona, revenue]) => ({ persona, revenue }));

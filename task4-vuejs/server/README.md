@@ -76,6 +76,7 @@ default is fine for local work, not for anything that leaves your machine.
 | DELETE | `/api/wishlist/:productId` | required | |
 | POST | `/api/orders` | required | snapshots the cart into a new order, clears it |
 | GET | `/api/orders` | required | |
+| GET | `/api/metrics/orders` | - | backs `/metrics`; reads `synthetic_*` tables that only `analytics/generate.py` writes - `[]` if it hasn't been run |
 
 ## Migrations
 
@@ -87,3 +88,8 @@ alembic upgrade head
 `schema.dbml` is the diagram-friendly source of truth for the shape of
 this - `models.py` is its executable form. Nothing keeps them in sync
 automatically; if you change one, update the other by hand.
+
+The `synthetic_*` tables (see `analytics/README.md`) live in this same
+file but aren't part of this - they're created and cleared by
+`analytics/generate.py` directly, not Alembic, on purpose: they're demo
+data for `/metrics`, not part of the real app's schema.

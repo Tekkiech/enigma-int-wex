@@ -69,9 +69,9 @@ A [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) storefront, "T
 - `src/stores/catalog.vue` and `account.vue` (Pinia stores as plain `.vue` files, no `<template>`) mirror the API: cart/wishlist writes are local-first and only sync when signed in, so browsing still needs no account; `POST /api/orders` snapshots the cart into a real order and clears it
 - `src/views/`: searchable category tiles on Home, a filterable/sortable grid per category, a product detail page with gallery/specs/reviews (rate and comment when signed in, saved to the DB), deals, saved items, cart with checkout, account with separate sign-up/sign-in forms and order history, a Chart.js + Leaflet shopper-metrics dashboard, and a static Support page (FAQ, delivery, returns)
 - `src/router.js` uses hash-based history for deep links on a plain static host
-- `analytics/`: a standalone generator (`generate.py`, stdlib only) that fabricates 18 months of persona-driven, geolocated order history against the real catalogue, feeding the `/metrics` dashboard - kept separate from the live app's database on purpose, see `analytics/README.md`
+- `analytics/`: a DB-only generator (`generate.py`, stdlib only, real classes not dataclasses) that fabricates 18 months of persona-driven, geolocated order history for named synthetic shoppers, writing it straight into `synthetic_*` tables in the same SQLite file - separate from the live app's own tables, not from the database itself. `GET /api/metrics/orders` serves them to the `/metrics` dashboard; see `analytics/README.md`
 
-The frontend alone (`npm run dev`) gets a blank catalogue and a site nobody can sign into: the backend has to be running too.
+The frontend alone (`npm run dev`) gets a blank catalogue, a site nobody can sign into, and an empty `/metrics`: the backend has to be running too.
 
 ```bash
 cd task4-vuejs/server
@@ -80,6 +80,11 @@ pip install -r requirements.txt
 alembic upgrade head  # creates the database and all tables
 python seed.py         # pulls the catalogue in from DummyJSON, once
 python app.py           # runs on http://localhost:5000
+```
+
+```bash
+cd task4-vuejs/analytics
+python3 generate.py    # optional - fills /metrics with synthetic shoppers
 ```
 
 ```bash
