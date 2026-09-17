@@ -2,7 +2,7 @@
 import { onMounted } from 'vue';
 import SiteHeader from './components/layout/SiteHeader.vue';
 import SiteFooter from './components/layout/SiteFooter.vue';
-import { useAccountStore } from './stores/account.js';
+import useAccountStore from './stores/account.vue';
 
 // The Flask session cookie can outlive a page refresh even though this
 // store's state can't - check once, up front, whether we're already

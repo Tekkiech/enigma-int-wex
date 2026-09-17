@@ -1,7 +1,7 @@
 <script setup>
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
-import { useCatalogStore } from '../../stores/catalog.js';
+import useCatalogStore from '../../stores/catalog.vue';
 
 const catalog = useCatalogStore();
 const route = useRoute();

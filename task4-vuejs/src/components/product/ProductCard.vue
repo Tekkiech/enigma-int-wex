@@ -1,6 +1,6 @@
 <script setup>
 import { RouterLink } from 'vue-router';
-import { useCatalogStore } from '../../stores/catalog.js';
+import useCatalogStore from '../../stores/catalog.vue';
 import ProductImage from './ProductImage.vue';
 import ProductPrice from './ProductPrice.vue';
 import DiscountBadge from './DiscountBadge.vue';

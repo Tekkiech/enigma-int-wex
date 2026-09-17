@@ -1,6 +1,6 @@
 <script setup>
 import { onMounted } from 'vue';
-import { useCatalogStore } from '../stores/catalog.js';
+import useCatalogStore from '../stores/catalog.vue';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 import SearchField from '../components/filters/SearchField.vue';
 import SortSelect from '../components/filters/SortSelect.vue';

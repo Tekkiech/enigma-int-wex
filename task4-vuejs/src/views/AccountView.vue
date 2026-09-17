@@ -1,7 +1,7 @@
 <script setup>
 import { reactive, watch } from 'vue';
-import { useAccountStore } from '../stores/account.js';
-import { useCatalogStore } from '../stores/catalog.js';
+import useAccountStore from '../stores/account.vue';
+import useCatalogStore from '../stores/catalog.vue';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 
 const account = useAccountStore();

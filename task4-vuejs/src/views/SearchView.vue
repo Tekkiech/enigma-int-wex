@@ -1,7 +1,7 @@
 <script setup>
 import { computed, onMounted } from 'vue';
 import { useRoute } from 'vue-router';
-import { useCatalogStore } from '../stores/catalog.js';
+import useCatalogStore from '../stores/catalog.vue';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 import ProductCard from '../components/product/ProductCard.vue';
 import LoadingState from '../components/common/LoadingState.vue';

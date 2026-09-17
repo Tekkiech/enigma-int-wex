@@ -1,6 +1,6 @@
 <script setup>
 import { computed, onMounted, watch } from 'vue';
-import { useCatalogStore } from '../stores/catalog.js';
+import useCatalogStore from '../stores/catalog.vue';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 import CategoryChips from '../components/filters/CategoryChips.vue';
 import SearchField from '../components/filters/SearchField.vue';

@@ -1,6 +1,5 @@
-// Static demo content for the Support page. There's no real backend behind
-// any of this (same spirit as stores/account.js) — it exists to fill out
-// the page the footer's Delivery Info / Returns / Contact Us links used to
+// Static demo content for the Support page. It exists to fill out the
+// page the footer's Delivery Info / Returns / Contact Us links used to
 // point at nothing.
 
 export const FAQS = [

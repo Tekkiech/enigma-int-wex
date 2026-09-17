@@ -1,8 +1,8 @@
 <script setup>
 import { onMounted, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { useCatalogStore } from '../stores/catalog.js';
-import { useAccountStore } from '../stores/account.js';
+import useCatalogStore from '../stores/catalog.vue';
+import useAccountStore from '../stores/account.vue';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 import EmptyState from '../components/common/EmptyState.vue';
 import CartItemRow from '../components/cart/CartItemRow.vue';
