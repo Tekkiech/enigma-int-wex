@@ -37,6 +37,7 @@ Table product_tag {
 Table product_review {
   id             integer   [primary key]
   product_id     integer   [not null]
+  user_id        integer   [note: 'Null for the DummyJSON seed reviews - only set for a review posted through the API']
   reviewer_name  varchar
   reviewer_email varchar
   rating         decimal(3,2)
@@ -45,11 +46,13 @@ Table product_review {
 }
 
 Table user {
-  id            integer   [primary key]
-  name          varchar
-  email         varchar   [unique, not null]
-  password_hash varchar   [not null, note: 'bcrypt output - algorithm, cost, salt and hash all embedded in one string']
-  created_at    timestamp [default: `now()`]
+  id                     integer   [primary key]
+  name                   varchar
+  email                  varchar   [unique, not null]
+  password_hash          varchar   [not null, note: 'bcrypt output - algorithm, cost, salt and hash all embedded in one string']
+  created_at             timestamp [default: `now()`]
+  failed_login_attempts  integer   [not null, default: 0]
+  locked_until           timestamp [note: 'Set for the duration of a lockout after too many failed logins, null otherwise']
 }
 
 Table cart_item {
@@ -95,6 +98,7 @@ Ref: product.category_id > category.id
 Ref: product_image.product_id > product.id [delete: cascade]
 Ref: product_tag.product_id > product.id [delete: cascade]
 Ref: product_review.product_id > product.id [delete: cascade]
+Ref: product_review.user_id > user.id
 Ref: cart_item.user_id > user.id [delete: cascade]
 Ref: cart_item.product_id > product.id
 Ref: wishlist_item.user_id > user.id [delete: cascade]

@@ -38,11 +38,20 @@ there's one place to change, not several.
 
 Session-cookie based, not tokens - `POST /api/auth/signup` or
 `/api/auth/login` sets a signed cookie via Flask's built-in session, and
-every `/api/cart`, `/api/wishlist`, `/api/orders` route requires it
-(`@login_required` in `auth.py`). Passwords are hashed with bcrypt
-(`auth.py`) before they ever reach the database - see the schema notes on
-`user.password_hash` for why that's the only column needed (bcrypt embeds
-its own salt in the stored string).
+every `/api/cart`, `/api/wishlist`, `/api/orders`, `/api/products/:id/reviews`
+route requires it (`@login_required` in `auth.py`). Passwords are hashed
+with bcrypt (`auth.py`) before they ever reach the database - see the
+schema notes on `user.password_hash` for why that's the only column
+needed (bcrypt embeds its own salt in the stored string).
+
+Signup and login enforce different things, on purpose. Signup checks
+password quality - at least 8 characters, a letter and a number
+(`password_requirement_errors` in `auth.py`) - since there's nothing to
+validate the shape of a login attempt against. Login instead tracks
+failed attempts per account and locks it for 15 minutes after 5 in a
+row (`user.failed_login_attempts`/`locked_until`), checked with a
+constant-time dummy-hash comparison so a nonexistent email doesn't
+respond any faster than a wrong password.
 
 `SECRET_KEY` (env var) signs the session cookie - the `dev-only-change-me`
 default is fine for local work, not for anything that leaves your machine.
@@ -58,6 +67,7 @@ default is fine for local work, not for anything that leaves your machine.
 | GET | `/api/categories` | - | |
 | GET | `/api/products?category=&q=` | - | includes `tags` and `reviews` per product |
 | GET | `/api/products/:id` | - | |
+| POST | `/api/products/:id/reviews` | required | `{rating, comment}`, recomputes the product's `rating` as the average of its reviews |
 | GET | `/api/cart` | required | |
 | PUT | `/api/cart/:productId` | required | `{quantity}` |
 | DELETE | `/api/cart/:productId` | required | |
