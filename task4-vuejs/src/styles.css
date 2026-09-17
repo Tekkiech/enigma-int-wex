@@ -1664,6 +1664,83 @@ input {
   font-size: 13px;
 }
 
+.metrics-map-card {
+  margin-bottom: 40px;
+}
+
+.location-map {
+  position: relative;
+}
+
+.location-map__canvas {
+  height: 420px;
+  border-radius: 4px;
+}
+
+/* Mute the OSM basemap so the revenue markers stay the highest-contrast
+   thing on screen - same approach as task3-leafletjs. */
+.location-map__canvas .leaflet-tile-pane {
+  filter: grayscale(55%) brightness(1.05) contrast(0.95);
+}
+
+.leaflet-tooltip.location-map__tooltip-wrap {
+  background-color: var(--ink);
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  padding: 8px 10px;
+}
+
+.leaflet-tooltip.location-map__tooltip-wrap::before {
+  border-top-color: var(--ink);
+}
+
+.location-map__tooltip strong {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-body);
+}
+
+.location-map__legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  z-index: 1000;
+  background-color: white;
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+}
+
+.location-map__legend-label {
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  font-size: 11px;
+  margin: 0 0 8px;
+}
+
+.location-map__legend-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.location-map__legend-row:last-child {
+  margin-bottom: 0;
+}
+
+.location-map__legend-dot {
+  display: inline-block;
+  border-radius: 50%;
+  background-color: #256abf;
+  flex-shrink: 0;
+}
+
 @media (max-width: 720px) {
   .metrics-grid {
     grid-template-columns: 1fr;

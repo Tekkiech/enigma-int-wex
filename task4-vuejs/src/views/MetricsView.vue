@@ -6,6 +6,7 @@ import ChartCard from '../components/metrics/ChartCard.vue';
 import DataTable from '../components/metrics/DataTable.vue';
 import LineChart from '../components/metrics/LineChart.vue';
 import BarChart from '../components/metrics/BarChart.vue';
+import LocationMap from '../components/metrics/LocationMap.vue';
 import {
   allRecords,
   personaList,
@@ -15,6 +16,7 @@ import {
   categoryBreakdown,
   personaBreakdown,
   outlierSample,
+  locationBreakdown,
 } from '../data/metrics.js';
 import { CATEGORICAL, SEQUENTIAL_BLUE } from '../data/chartTokens.js';
 
@@ -34,6 +36,7 @@ const months = computed(() => monthlySeries(filtered.value));
 const categories = computed(() => categoryBreakdown(filtered.value));
 const personaRevenue = personaBreakdown(); // always the full dataset - see metrics.js
 const outliers = computed(() => outlierSample(filtered.value));
+const locations = computed(() => locationBreakdown(filtered.value));
 
 function compactCurrency(value) {
   if (value >= 1_000_000) return `$${(value / 1_000_000).toFixed(1)}M`;
@@ -160,6 +163,23 @@ function formatDate(iso) {
         </template>
       </ChartCard>
     </div>
+
+    <ChartCard title="Revenue by location" caption="Circle size is revenue per city, current filter" class="metrics-map-card">
+      <template #chart>
+        <LocationMap :rows="locations" />
+      </template>
+      <template #table>
+        <DataTable
+          :columns="[
+            { key: 'city', label: 'City' },
+            { key: 'revenue', label: 'Revenue', align: 'num' },
+            { key: 'orderCount', label: 'Orders', align: 'num' },
+            { key: 'topPersona', label: 'Mostly' },
+          ]"
+          :rows="locations.map((l) => ({ city: `${l.city}, ${l.region}`, revenue: compactCurrency(l.revenue), orderCount: l.orderCount, topPersona: humanize(l.topPersona) }))"
+        />
+      </template>
+    </ChartCard>
 
     <section class="metrics-outliers">
       <h2>Unexpected purchases</h2>

@@ -85,3 +85,41 @@ export function outlierSample(list, limit = 8) {
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, limit);
 }
+
+// One row per shopper city - a location is assigned once per shopper (see
+// analytics/locations.py), so every line item for the same userId shares
+// the same city/region/lat/lng, and grouping by city here is really
+// grouping by "the shoppers who live there."
+export function locationBreakdown(list) {
+  const byCity = new Map();
+
+  for (const r of list) {
+    if (!byCity.has(r.city)) {
+      byCity.set(r.city, {
+        city: r.city,
+        region: r.region,
+        lat: r.lat,
+        lng: r.lng,
+        revenue: 0,
+        orderIds: new Set(),
+        personaCounts: new Map(),
+      });
+    }
+    const bucket = byCity.get(r.city);
+    bucket.revenue += r.lineTotal;
+    bucket.orderIds.add(r.orderId);
+    bucket.personaCounts.set(r.persona, (bucket.personaCounts.get(r.persona) || 0) + 1);
+  }
+
+  return [...byCity.values()]
+    .map((b) => ({
+      city: b.city,
+      region: b.region,
+      lat: b.lat,
+      lng: b.lng,
+      revenue: b.revenue,
+      orderCount: b.orderIds.size,
+      topPersona: [...b.personaCounts.entries()].sort((a, c) => c[1] - a[1])[0][0],
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
+}
