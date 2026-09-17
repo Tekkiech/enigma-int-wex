@@ -8,6 +8,7 @@ import SavedView from './views/SavedView.vue';
 import AccountView from './views/AccountView.vue';
 import CartView from './views/CartView.vue';
 import SupportView from './views/SupportView.vue';
+import MetricsView from './views/MetricsView.vue';
 import NotFoundView from './views/NotFoundView.vue';
 
 // Hash history keeps deep links (e.g. #/product/42) working when this is
@@ -24,6 +25,7 @@ const router = createRouter({
     { path: '/account', name: 'account', component: AccountView },
     { path: '/cart', name: 'cart', component: CartView },
     { path: '/support', name: 'support', component: SupportView },
+    { path: '/metrics', name: 'metrics', component: MetricsView },
     { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
   ],
   scrollBehavior(to) {
