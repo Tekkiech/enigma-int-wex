@@ -13,6 +13,7 @@ import DeliveryInfo from '../components/product/DeliveryInfo.vue';
 import WishlistButton from '../components/product/WishlistButton.vue';
 import ProductSpecs from '../components/product/ProductSpecs.vue';
 import ProductReviews from '../components/product/ProductReviews.vue';
+import ProductReviewForm from '../components/product/ProductReviewForm.vue';
 import RelatedProducts from '../components/product/RelatedProducts.vue';
 
 const props = defineProps({
@@ -95,6 +96,7 @@ const breadcrumbItems = computed(() => {
 
       <section class="detail-view__reviews">
         <h2>Reviews</h2>
+        <ProductReviewForm :product-id="product.id" />
         <ProductReviews :reviews="product.reviews" />
       </section>
 

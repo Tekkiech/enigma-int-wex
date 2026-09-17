@@ -244,6 +244,20 @@ export default defineStore('catalog', () => {
     }
   }
 
+  // Rating is recomputed the same way app.py does it - the average of
+  // every review with a rating, this one included - so the number shown
+  // here matches what a re-fetch of the product would show, with no
+  // round trip needed to find out.
+  async function submitReview(productId, { rating, comment }) {
+    const review = await backend.submitReview(productId, { rating, comment });
+    const product = productById(productId);
+    if (!product) return review;
+    product.reviews = [review, ...product.reviews];
+    const rated = product.reviews.filter((r) => r.rating != null);
+    product.rating = rated.reduce((sum, r) => sum + r.rating, 0) / rated.length;
+    return review;
+  }
+
   return {
     products,
     loading,
@@ -282,6 +296,7 @@ export default defineStore('catalog', () => {
     resetAccountState,
     placeOrder,
     fetchOrders,
+    submitReview,
   };
 });
 </script>

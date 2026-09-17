@@ -821,6 +821,68 @@ input {
   color: var(--ink);
 }
 
+.review-form {
+  margin: 16px 0 0;
+  max-width: 420px;
+}
+
+.review-form__signed-out {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.review-form__signed-out a {
+  color: var(--ink);
+  text-decoration: underline;
+}
+
+.review-form__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.review-form__stars {
+  display: flex;
+  gap: 4px;
+}
+
+.review-form__star {
+  border: none;
+  background: none;
+  cursor: pointer;
+  font-size: 22px;
+  line-height: 1;
+  padding: 0;
+  color: var(--line);
+}
+
+.review-form__star.is-filled {
+  color: var(--accent);
+}
+
+.review-form__comment {
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 10px 12px;
+  font-size: 14px;
+  font-family: var(--font-body);
+  color: var(--ink);
+  resize: vertical;
+}
+
+.review-form__error {
+  font-size: 13px;
+  color: var(--accent);
+  margin: 0;
+}
+
+.review-form__success {
+  font-size: 13px;
+  color: var(--text-dim);
+  margin: 0;
+}
+
 .review-list {
   list-style: none;
   margin: 16px 0 0;

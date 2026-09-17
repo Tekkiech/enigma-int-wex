@@ -81,3 +81,7 @@ export function placeOrder() {
 export function fetchOrders() {
   return request('/api/orders');
 }
+
+export function submitReview(productId, { rating, comment }) {
+  return request(`/api/products/${productId}/reviews`, { method: 'POST', body: JSON.stringify({ rating, comment }) });
+}

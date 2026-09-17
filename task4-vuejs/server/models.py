@@ -69,6 +69,9 @@ class ProductReview(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
+    # Null for the reviews seed.py imported from DummyJSON - only a review
+    # posted through the API by a signed-in user has one of these.
+    user_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), default=None)
     reviewer_name: Mapped[str | None] = mapped_column(default=None)
     reviewer_email: Mapped[str | None] = mapped_column(default=None)
     rating: Mapped[float | None] = mapped_column(Numeric(3, 2), default=None)

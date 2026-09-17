@@ -8,7 +8,7 @@ from decimal import Decimal
 
 from flask import Flask, jsonify, request, session
 from flask_cors import CORS
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import selectinload
 
 from auth import (
@@ -65,6 +65,7 @@ def product_to_dict(product: Product) -> dict:
 
 def review_to_dict(review: ProductReview) -> dict:
     return {
+        "userId": review.user_id,
         "reviewerName": review.reviewer_name,
         "reviewerEmail": review.reviewer_email,
         "rating": num(review.rating),
@@ -208,6 +209,49 @@ def get_product(product_id):
         if not product or not product.is_active:
             return jsonify(error="Product not found."), 404
         return jsonify(product_to_dict(product))
+
+
+@app.post("/api/products/<int:product_id>/reviews")
+@login_required
+def add_review(product_id):
+    body = request.get_json(force=True)
+    rating = body.get("rating")
+    comment = (body.get("comment") or "").strip()
+    if not isinstance(rating, (int, float)) or not (1 <= rating <= 5):
+        return jsonify(error="Rating must be between 1 and 5."), 400
+    if not comment:
+        return jsonify(error="Comment is required."), 400
+
+    with SessionLocal() as db:
+        product = db.get(Product, product_id)
+        if not product or not product.is_active:
+            return jsonify(error="Product not found."), 404
+        user = db.get(User, session["user_id"])
+
+        review = ProductReview(
+            product_id=product_id,
+            user_id=user.id,
+            reviewer_name=user.name or user.email,
+            reviewer_email=user.email,
+            rating=rating,
+            comment=comment,
+        )
+        db.add(review)
+        db.flush()  # so the average below counts the row just added
+
+        product.rating = round(
+            float(
+                db.scalar(
+                    select(func.avg(ProductReview.rating)).where(
+                        ProductReview.product_id == product_id, ProductReview.rating.is_not(None)
+                    )
+                )
+            ),
+            2,
+        )
+        db.commit()
+        db.refresh(review)
+        return jsonify(review_to_dict(review)), 201
 
 
 # --- cart -----------------------------------------------------------------
