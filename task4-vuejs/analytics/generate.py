@@ -3,11 +3,12 @@
 Reads the real product catalogue straight out of tekkiech.db (read-only -
 this never writes to the live app's database, see the README in this
 folder for why) and fabricates a year and a half of orders for a batch of
-synthetic shoppers, each assigned a persona from personas.py. Every line
-item has a small independent chance of ignoring its shopper's persona
-entirely and buying from a random category instead - that's the "quirky
-outlier" behaviour (a tech buyer's occasional banana), not a special case,
-just noise layered on top of the persona's normal weights.
+synthetic shoppers, each assigned a persona from personas.py and a home
+city from locations.py. Every line item has a small independent chance
+of ignoring its shopper's persona entirely and buying from a random
+category instead - that's the "quirky outlier" behaviour (a tech buyer's
+occasional banana), not a special case, just noise layered on top of the
+persona's normal weights.
 
 Output is a flat JSON array, one record per order line item, written to
 synthetic-orders.json - deliberately not written back into the SQLite DB,
@@ -26,6 +27,7 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
+from locations import LOCATIONS, Location
 from personas import PERSONAS, Persona
 
 DB_PATH = Path(__file__).resolve().parent.parent / "server" / "tekkiech.db"
@@ -83,6 +85,7 @@ class OrderLine:
     order_date: date
     user_id: str
     persona: str
+    location: Location
     product: Product
     quantity: int
     is_outlier: bool
@@ -97,6 +100,10 @@ class OrderLine:
             "date": self.order_date.isoformat(),
             "userId": self.user_id,
             "persona": self.persona,
+            "city": self.location.city,
+            "region": self.location.region,
+            "lat": self.location.lat,
+            "lng": self.location.lng,
             "productId": self.product.id,
             "title": self.product.title,
             "category": self.product.category,
@@ -133,14 +140,17 @@ class SeasonalCalendar:
 
 
 class Shopper:
-    """One synthetic user: an id and a persona. Owns nothing about *when*
-    it shops (that's OrderGenerator's calendar) or *what's for sale*
-    (that's the catalogue) - just how many orders it places and, per
-    order, what it tends to buy."""
+    """One synthetic user: an id, a persona, and a home location. Owns
+    nothing about *when* it shops (that's OrderGenerator's calendar) or
+    *what's for sale* (that's the catalogue) - just how many orders it
+    places and, per order, what it tends to buy and where it's ordering
+    from. Location is independent of persona - a home-cook is as likely
+    to be in Seattle as Miami, no geographic bias invented."""
 
-    def __init__(self, user_id: str, persona: Persona):
+    def __init__(self, user_id: str, persona: Persona, location: Location):
         self.user_id = user_id
         self.persona = persona
+        self.location = location
 
     def order_count(self, months: int, rng: random.Random) -> int:
         mean = self.persona.avg_orders_per_year * (months / 12)
@@ -190,7 +200,14 @@ class OrderGenerator:
             category = self._weighted_choice(persona_weights)
         quantity = self._weighted_choice(self.QUANTITY_WEIGHTS)
         return OrderLine(
-            order_id, order_date, shopper.user_id, shopper.persona.name, self._random_product(category), quantity, is_outlier
+            order_id,
+            order_date,
+            shopper.user_id,
+            shopper.persona.name,
+            shopper.location,
+            self._random_product(category),
+            quantity,
+            is_outlier,
         )
 
     def _generate_for_shopper(self, shopper: Shopper, calendar: SeasonalCalendar, months: int, order_seq: int) -> tuple:
@@ -214,7 +231,7 @@ class OrderGenerator:
         lines = []
         order_seq = 0
         for i in range(num_users):
-            shopper = Shopper(f"synthetic-{i + 1}", self.rng.choice(self.personas))
+            shopper = Shopper(f"synthetic-{i + 1}", self.rng.choice(self.personas), self.rng.choice(LOCATIONS))
             shopper_lines, order_seq = self._generate_for_shopper(shopper, calendar, months, order_seq)
             lines.extend(shopper_lines)
 

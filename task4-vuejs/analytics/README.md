@@ -9,10 +9,11 @@ the live app's data on purpose.
 
 Organized around a few small classes rather than one long script:
 `Catalogue` (loads and groups the product data), `Persona` (a shopper
-archetype's category weights, in `personas.py`), `Shopper` (one synthetic
-user), `SeasonalCalendar` (the Nov/Dec-weighted date draw), and
-`OrderGenerator`, which owns the random-number generator and ties the
-rest together into `OrderLine` records.
+archetype's category weights, in `personas.py`), `Location` (a home city
+with real coordinates, in `locations.py`), `Shopper` (one synthetic user -
+a persona plus a location), `SeasonalCalendar` (the Nov/Dec-weighted date
+draw), and `OrderGenerator`, which owns the random-number generator and
+ties the rest together into `OrderLine` records.
 
 Stdlib only, no venv needed:
 
@@ -36,6 +37,12 @@ Order volume is also weighted by calendar month - a Nov/Dec holiday bump,
 a mild Jan/Feb dip - so a line chart of orders over time has actual shape
 instead of flat noise.
 
+Each shopper also gets a home city from `locations.py` - 18 real US
+cities with real coordinates, picked independently of persona (no
+invented correlation between what someone buys and where they live).
+It's assigned once per shopper, not per order, the same way a persona is:
+every line item for `synthetic-35` carries the same city.
+
 ## Output shape
 
 One JSON record per order line item, not nested by order:
@@ -46,6 +53,10 @@ One JSON record per order line item, not nested by order:
   "date": "2025-03-26",
   "userId": "synthetic-35",
   "persona": "tech-enthusiast",
+  "city": "Seattle",
+  "region": "WA",
+  "lat": 47.6062,
+  "lng": -122.3321,
   "productId": 103,
   "title": "Apple HomePod Mini Cosmic Grey",
   "category": "mobile-accessories",
