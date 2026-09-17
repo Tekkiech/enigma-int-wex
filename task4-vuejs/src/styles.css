@@ -992,6 +992,13 @@ input {
   margin: 0 0 20px;
 }
 
+.cart-summary__place-order {
+  display: block;
+  width: 100%;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
 .cart-summary__continue {
   display: block;
   width: 100%;
@@ -1235,6 +1242,62 @@ input {
   font-size: 13px;
   color: var(--text-dim);
   margin: 0 0 4px;
+}
+
+.account-form__error {
+  font-size: 13px;
+  color: var(--accent);
+  margin: -8px 0 0;
+}
+
+.order-history {
+  margin-top: 40px;
+  max-width: 560px;
+}
+
+.order-history h2 {
+  font-size: 18px;
+  margin-bottom: 16px;
+}
+
+.order-history__empty {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
+.order-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-card {
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 16px 20px;
+}
+
+.order-card__head {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-mono);
+  font-size: 13px;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+
+.order-card__subtotal {
+  color: var(--accent);
+}
+
+.order-card__items {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-dim);
 }
 
 .field {

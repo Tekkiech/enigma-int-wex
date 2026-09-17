@@ -1,0 +1,104 @@
+// Source of truth for the schema - paste into https://dbdiagram.io to view.
+// models.py is the executable version of this; keep them in sync by hand,
+// there's no generator wired up between the two.
+
+Table category {
+  id   integer [primary key]
+  slug varchar [unique, not null]
+  name varchar [not null]
+}
+
+Table product {
+  id                  integer       [primary key, note: 'Matches the DummyJSON product id at seed time']
+  category_id         integer       [not null]
+  title               varchar       [not null]
+  description         text
+  price               decimal(10,2) [not null]
+  discount_percentage decimal(5,2)  [default: 0]
+  rating              decimal(3,2)
+  stock               integer       [not null, default: 0]
+  brand               varchar
+  thumbnail           varchar
+  is_active           boolean       [not null, default: true, note: 'Soft-delete flag - never hard-delete a product referenced by past orders']
+}
+
+Table product_image {
+  id         integer [primary key]
+  product_id integer [not null]
+  url        varchar [not null]
+}
+
+Table product_tag {
+  id         integer [primary key]
+  product_id integer [not null]
+  tag        varchar [not null, note: 'Free text, e.g. "mascara" - drives the category filter chips (see categoryChips.js on the frontend)']
+}
+
+Table product_review {
+  id             integer   [primary key]
+  product_id     integer   [not null]
+  reviewer_name  varchar
+  reviewer_email varchar
+  rating         decimal(3,2)
+  comment        text
+  created_at     timestamp [default: `now()`]
+}
+
+Table user {
+  id            integer   [primary key]
+  name          varchar
+  email         varchar   [unique, not null]
+  password_hash varchar   [not null, note: 'bcrypt output - algorithm, cost, salt and hash all embedded in one string']
+  created_at    timestamp [default: `now()`]
+}
+
+Table cart_item {
+  id         integer   [primary key]
+  user_id    integer   [not null]
+  product_id integer   [not null]
+  quantity   integer   [not null, default: 1]
+  added_at   timestamp [default: `now()`]
+
+  indexes {
+    (user_id, product_id) [unique]
+  }
+}
+
+Table wishlist_item {
+  id         integer   [primary key]
+  user_id    integer   [not null]
+  product_id integer   [not null]
+  added_at   timestamp [default: `now()`]
+
+  indexes {
+    (user_id, product_id) [unique]
+  }
+}
+
+Table order {
+  id         integer       [primary key, note: '"order" is a reserved SQL keyword - SQLAlchemy auto-quotes it, but a manual sqlite3 CLI query against this table needs quoting too']
+  user_id    integer       [not null]
+  status     varchar       [default: 'placed']
+  subtotal   decimal(10,2) [not null]
+  created_at timestamp     [default: `now()`]
+}
+
+Table order_item {
+  id         integer       [primary key]
+  order_id   integer       [not null]
+  product_id integer       [not null]
+  unit_price decimal(10,2) [not null, note: 'Snapshot at order time - price history, distinct from the title-duplication issue']
+  quantity   integer       [not null, default: 1]
+}
+
+Ref: product.category_id > category.id
+Ref: product_image.product_id > product.id [delete: cascade]
+Ref: product_tag.product_id > product.id [delete: cascade]
+Ref: product_review.product_id > product.id [delete: cascade]
+Ref: cart_item.user_id > user.id [delete: cascade]
+Ref: cart_item.product_id > product.id
+Ref: wishlist_item.user_id > user.id [delete: cascade]
+Ref: wishlist_item.product_id > product.id
+Ref: order.user_id > user.id
+Ref: order_item.order_id > order.id [delete: cascade]
+Ref: order_item.product_id > product.id

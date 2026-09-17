@@ -22,7 +22,7 @@ import { RouterLink } from 'vue-router';
       </div>
       <div class="site-footer__col">
         <div class="site-footer__heading">Data</div>
-        <span>Product data via <a href="https://dummyjson.com/" target="_blank" rel="noopener">DummyJSON</a></span>
+        <span>Product data seeded from <a href="https://dummyjson.com/" target="_blank" rel="noopener">DummyJSON</a></span>
       </div>
     </div>
   </footer>
