@@ -99,6 +99,12 @@ class User(Base):
     password_hash: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
+    # Login lockout - see auth.py's LOCKOUT_THRESHOLD/LOCKOUT_MINUTES.
+    # failed_login_attempts resets to 0 on any successful login;
+    # locked_until is None except during an active lockout window.
+    failed_login_attempts: Mapped[int] = mapped_column(nullable=False, default=0)
+    locked_until: Mapped[datetime | None] = mapped_column(default=None)
+
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     wishlist_items: Mapped[list["WishlistItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     orders: Mapped[list["Order"]] = relationship(back_populates="user")

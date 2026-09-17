@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, watch } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import useAccountStore from '../stores/account.vue';
 import useCatalogStore from '../stores/catalog.vue';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
@@ -7,7 +7,9 @@ import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 const account = useAccountStore();
 const catalog = useCatalogStore();
 
-const form = reactive({ name: '', email: '', password: '' });
+const mode = ref('signup');
+const signupForm = reactive({ name: '', email: '', password: '', passwordConfirm: '' });
+const loginForm = reactive({ email: '', password: '' });
 
 // Not a plain onMounted check: on a fresh page load this view can mount
 // before App.vue's restoreSession() (async, checking the session cookie)
@@ -23,14 +25,28 @@ watch(
   { immediate: true }
 );
 
-async function submit() {
-  await account.createAccount({ name: form.name, email: form.email, password: form.password });
+function switchMode(next) {
+  mode.value = next;
+  account.error = null;
+}
+
+async function submitSignUp() {
+  await account.signUp({ ...signupForm });
   if (account.user) {
     // Order history is handled by the watch() above - it fires the
     // moment account.user is set, this included.
-    form.name = '';
-    form.email = '';
-    form.password = '';
+    signupForm.name = '';
+    signupForm.email = '';
+    signupForm.password = '';
+    signupForm.passwordConfirm = '';
+  }
+}
+
+async function submitLogIn() {
+  await account.logIn({ ...loginForm });
+  if (account.user) {
+    loginForm.email = '';
+    loginForm.password = '';
   }
 }
 
@@ -68,32 +84,67 @@ function formatDate(iso) {
       </div>
     </div>
 
-    <form v-else class="account-form" @submit.prevent="submit">
-      <p class="account-form__intro">
-        One form for both: enter a new email to create an account, or an existing one with its password to sign back in.
-      </p>
+    <div v-else class="account-form-wrap">
+      <div class="account-mode-toggle" role="tablist">
+        <button type="button" :class="{ 'is-active': mode === 'signup' }" @click="switchMode('signup')">
+          Sign up
+        </button>
+        <button type="button" :class="{ 'is-active': mode === 'login' }" @click="switchMode('login')">
+          Log in
+        </button>
+      </div>
 
-      <label class="field">
-        <span class="field__label">Name</span>
-        <input v-model="form.name" type="text" placeholder="Optional" autocomplete="name" />
-      </label>
+      <form v-if="mode === 'signup'" class="account-form" @submit.prevent="submitSignUp">
+        <p class="account-form__intro">Create an account to save your cart, wishlist, and order history.</p>
 
-      <label class="field">
-        <span class="field__label">Email</span>
-        <input v-model="form.email" type="email" placeholder="you@example.com" autocomplete="email" required />
-      </label>
+        <label class="field">
+          <span class="field__label">Name</span>
+          <input v-model="signupForm.name" type="text" placeholder="Optional" autocomplete="name" />
+        </label>
 
-      <label class="field">
-        <span class="field__label">Password</span>
-        <input v-model="form.password" type="password" autocomplete="current-password" required minlength="1" />
-      </label>
+        <label class="field">
+          <span class="field__label">Email</span>
+          <input v-model="signupForm.email" type="email" placeholder="you@example.com" autocomplete="email" required />
+        </label>
 
-      <p v-if="account.error" class="account-form__error" role="alert">{{ account.error }}</p>
+        <label class="field">
+          <span class="field__label">Password</span>
+          <input v-model="signupForm.password" type="password" autocomplete="new-password" required minlength="8" />
+          <span class="field__hint">At least 8 characters, with a letter and a number.</span>
+        </label>
 
-      <button type="submit" class="button button--solid" :disabled="account.loading">
-        {{ account.loading ? 'Working…' : 'Continue' }}
-      </button>
-    </form>
+        <label class="field">
+          <span class="field__label">Confirm password</span>
+          <input v-model="signupForm.passwordConfirm" type="password" autocomplete="new-password" required minlength="8" />
+        </label>
+
+        <p v-if="account.error" class="account-form__error" role="alert">{{ account.error }}</p>
+
+        <button type="submit" class="button button--solid" :disabled="account.loading">
+          {{ account.loading ? 'Working…' : 'Create account' }}
+        </button>
+      </form>
+
+      <form v-else class="account-form" @submit.prevent="submitLogIn">
+        <p class="account-form__intro">Sign in with an email and password you already have.</p>
+
+        <label class="field">
+          <span class="field__label">Email</span>
+          <input v-model="loginForm.email" type="email" placeholder="you@example.com" autocomplete="email" required />
+        </label>
+
+        <label class="field">
+          <span class="field__label">Password</span>
+          <input v-model="loginForm.password" type="password" autocomplete="current-password" required minlength="1" />
+        </label>
+
+        <p v-if="account.error" class="account-form__error" role="alert">{{ account.error }}</p>
+
+        <button type="submit" class="button button--solid" :disabled="account.loading">
+          {{ account.loading ? 'Working…' : 'Log in' }}
+        </button>
+      </form>
+    </div>
 
     <section v-if="account.user" class="order-history">
       <h2>Order history</h2>

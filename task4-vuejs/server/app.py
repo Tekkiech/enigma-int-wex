@@ -11,7 +11,15 @@ from flask_cors import CORS
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
 
-from auth import hash_password, login_required, verify_password
+from auth import (
+    hash_password,
+    lockout_seconds_remaining,
+    login_required,
+    password_requirement_errors,
+    register_failed_login,
+    register_successful_login,
+    verify_login,
+)
 from database import SessionLocal, engine
 from models import Base, CartItem, Category, Order, OrderItem, Product, ProductReview, User, WishlistItem
 
@@ -99,6 +107,10 @@ def signup():
     if not email or not password:
         return jsonify(error="Email and password are required."), 400
 
+    missing = password_requirement_errors(password)
+    if missing:
+        return jsonify(error="Password needs " + ", ".join(missing) + "."), 400
+
     with SessionLocal() as db:
         if db.scalar(select(User).where(User.email == email)):
             return jsonify(error="An account with that email already exists."), 409
@@ -117,10 +129,22 @@ def login():
 
     with SessionLocal() as db:
         user = db.scalar(select(User).where(User.email == email))
-        if not user or not verify_password(password, user.password_hash):
-            return jsonify(error="Invalid email or password."), 401
-        session["user_id"] = user.id
-        return jsonify(id=user.id, name=user.name, email=user.email)
+        password_ok = verify_login(password, user)
+
+        if user:
+            remaining = lockout_seconds_remaining(user)
+            if remaining:
+                return jsonify(error=f"Too many failed attempts. Try again in {remaining // 60 + 1} minute(s)."), 423
+            if not password_ok:
+                register_failed_login(user)
+                db.commit()
+                return jsonify(error="Invalid email or password."), 401
+            register_successful_login(user)
+            db.commit()
+            session["user_id"] = user.id
+            return jsonify(id=user.id, name=user.name, email=user.email)
+
+        return jsonify(error="Invalid email or password."), 401
 
 
 @app.post("/api/auth/logout")

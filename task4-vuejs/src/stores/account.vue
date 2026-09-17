@@ -26,28 +26,42 @@ export default defineStore('account', () => {
     }
   }
 
-  // One form, no separate "log in" page: try creating the account,
-  // and if that email's already taken, retry as a sign-in with the
-  // same credentials instead of making the user start over.
-  async function createAccount({ name, email, password }) {
-    loading.value = true;
+  // Separate from logIn on purpose: signup owns password quality (a
+  // confirmation match, length/complexity - all things Flask's
+  // /api/auth/signup also re-checks server-side, this just gives faster
+  // feedback), none of which apply to signing into an account that
+  // already exists.
+  async function signUp({ name, email, password, passwordConfirm }) {
     error.value = null;
+    if (password !== passwordConfirm) {
+      error.value = "Passwords don't match.";
+      return;
+    }
+    loading.value = true;
     try {
       user.value = await backend.signup({ name: name.trim(), email: email.trim(), password });
     } catch (err) {
-      if (err.status === 409) {
-        try {
-          user.value = await backend.login({ email: email.trim(), password });
-        } catch {
-          error.value = "An account with that email already exists, and that password doesn't match it.";
-          loading.value = false;
-          return;
-        }
-      } else {
-        error.value = err.message;
-        loading.value = false;
-        return;
-      }
+      error.value = err.message;
+      loading.value = false;
+      return;
+    }
+    await useCatalogStore().syncFromServer();
+    loading.value = false;
+  }
+
+  // Separate from signUp on purpose: login owns brute-force resistance
+  // (Flask tracks failed attempts per account and locks it out after
+  // too many - see server/auth.py) rather than password quality, since
+  // there's nothing to validate the shape of on a login attempt.
+  async function logIn({ email, password }) {
+    loading.value = true;
+    error.value = null;
+    try {
+      user.value = await backend.login({ email: email.trim(), password });
+    } catch (err) {
+      error.value = err.message;
+      loading.value = false;
+      return;
     }
     await useCatalogStore().syncFromServer();
     loading.value = false;
@@ -63,6 +77,6 @@ export default defineStore('account', () => {
     useCatalogStore().resetAccountState();
   }
 
-  return { user, loading, error, restoreSession, createAccount, signOut };
+  return { user, loading, error, restoreSession, signUp, logIn, signOut };
 });
 </script>
