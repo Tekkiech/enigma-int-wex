@@ -3,6 +3,7 @@
 # products and categories doesn't.
 
 import os
+from collections import Counter
 from decimal import Decimal
 
 from flask import Flask, jsonify, request, session
@@ -22,7 +23,7 @@ from auth import (
 )
 from database import SessionLocal, engine
 from models import Base, CartItem, Category, Order, OrderItem, Product, ProductReview, User, WishlistItem
-from shopper_profile import is_outlier_purchase, predict_persona, random_profile
+from shopper_profile import initial_profile, is_outlier_purchase, predict_persona
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
@@ -126,7 +127,7 @@ def signup():
     with SessionLocal() as db:
         if db.scalar(select(User).where(User.email == email)):
             return jsonify(error="An account with that email already exists."), 409
-        user = User(name=name or None, email=email, password_hash=hash_password(password), **random_profile())
+        user = User(name=name or None, email=email, password_hash=hash_password(password), **initial_profile())
         db.add(user)
         db.commit()
         session["user_id"] = user.id
@@ -220,6 +221,67 @@ def get_product(product_id):
         if not product or not product.is_active:
             return jsonify(error="Product not found."), 404
         return jsonify(product_to_dict(product))
+
+
+FREQUENTLY_BOUGHT_TOGETHER_LIMIT = 4
+
+
+@app.get("/api/products/<int:product_id>/frequently-bought-together")
+def frequently_bought_together(product_id):
+    # Counts how often other products show up in the same order as this
+    # one - real orders and the fake shoppers' orders both count, added
+    # together, so this has something to show even on a fresh database
+    # before any real orders exist.
+    with SessionLocal() as db:
+        counts = Counter()
+
+        real_rows = db.execute(
+            text(
+                """
+                SELECT other.product_id AS product_id, COUNT(DISTINCT this.order_id) AS times
+                FROM order_item this
+                JOIN order_item other ON other.order_id = this.order_id AND other.product_id != this.product_id
+                WHERE this.product_id = :product_id
+                GROUP BY other.product_id
+                """
+            ),
+            {"product_id": product_id},
+        ).all()
+        for other_id, times in real_rows:
+            counts[other_id] += times
+
+        synthetic_table_exists = db.scalar(
+            text("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'synthetic_order_line'")
+        )
+        if synthetic_table_exists:
+            synthetic_rows = db.execute(
+                text(
+                    """
+                    SELECT other.product_id AS product_id, COUNT(DISTINCT this.order_id) AS times
+                    FROM synthetic_order_line this
+                    JOIN synthetic_order_line other
+                        ON other.order_id = this.order_id AND other.product_id != this.product_id
+                    WHERE this.product_id = :product_id
+                    GROUP BY other.product_id
+                    """
+                ),
+                {"product_id": product_id},
+            ).all()
+            for other_id, times in synthetic_rows:
+                counts[other_id] += times
+
+        top_ids = [pid for pid, _times in counts.most_common(FREQUENTLY_BOUGHT_TOGETHER_LIMIT)]
+        if not top_ids:
+            return jsonify([])
+
+        products = db.scalars(
+            select(Product)
+            .where(Product.id.in_(top_ids), Product.is_active.is_(True))
+            .options(*product_load_options())
+        ).all()
+        by_id = {product.id: product for product in products}
+        ordered = [by_id[pid] for pid in top_ids if pid in by_id]
+        return jsonify([product_to_dict(product) for product in ordered])
 
 
 @app.post("/api/products/<int:product_id>/reviews")

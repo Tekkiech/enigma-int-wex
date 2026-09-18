@@ -1,14 +1,14 @@
-# Every new account gets a random persona and home city at signup, just
-# as a starting guess - see predict_persona() below for how it gets
-# updated once they've actually bought something. The persona doesn't
-# limit what a real account can buy - but /api/metrics/orders checks a
-# purchase's category against PERSONA_CATEGORIES to flag it as an
-# "unexpected purchase" when it's outside what that persona normally
-# buys, the same way the fake shoppers work. Same persona names,
-# categories, and cities as analytics/generate.py uses, kept as a
-# separate (simpler) copy here since this file doesn't need the
-# category weights, just which categories count as "normal" for each
-# persona.
+# Every new account gets a random home city at signup, but no persona
+# yet - persona starts out None ("not assigned") until they place their
+# first order, then predict_persona() below picks one based on what
+# they actually bought. The persona doesn't limit what a real account
+# can buy - but /api/metrics/orders checks a purchase's category
+# against PERSONA_CATEGORIES to flag it as an "unexpected purchase"
+# when it's outside what that persona normally buys, the same way the
+# fake shoppers work. Same persona names, categories, and cities as
+# analytics/generate.py uses, kept as a separate (simpler) copy here
+# since this file doesn't need the category weights, just which
+# categories count as "normal" for each persona.
 
 import random
 
@@ -70,6 +70,7 @@ def predict_persona(category_counts):
             best_persona = persona
     return best_persona
 
+
 LOCATIONS = [
     ("New York", "NY", 40.7128, -74.0060),
     ("Los Angeles", "CA", 34.0522, -118.2437),
@@ -92,10 +93,10 @@ LOCATIONS = [
 ]
 
 
-def random_profile():
+def initial_profile():
     city, region, lat, lng = random.choice(LOCATIONS)
     return {
-        "persona": random.choice(PERSONAS),
+        "persona": None,
         "city": city,
         "region": region,
         "lat": lat,

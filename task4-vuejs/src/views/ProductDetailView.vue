@@ -15,6 +15,7 @@ import ProductSpecs from '../components/product/ProductSpecs.vue';
 import ProductReviews from '../components/product/ProductReviews.vue';
 import ProductReviewForm from '../components/product/ProductReviewForm.vue';
 import RelatedProducts from '../components/product/RelatedProducts.vue';
+import * as backend from '../api/backend.js';
 
 const props = defineProps({
   id: { type: [String, Number], required: true },
@@ -26,6 +27,19 @@ onMounted(() => catalog.fetchProducts());
 
 const product = computed(() => catalog.productById(props.id));
 const related = computed(() => (product.value ? catalog.relatedTo(product.value) : []));
+
+const frequentlyBoughtTogether = ref([]);
+watch(
+  () => props.id,
+  async (id) => {
+    try {
+      frequentlyBoughtTogether.value = await backend.fetchFrequentlyBoughtTogether(id);
+    } catch {
+      frequentlyBoughtTogether.value = [];
+    }
+  },
+  { immediate: true }
+);
 
 const quantity = ref(1);
 watch(() => props.id, () => (quantity.value = 1));
@@ -88,6 +102,8 @@ const breadcrumbItems = computed(() => {
           <DeliveryInfo />
         </div>
       </div>
+
+      <RelatedProducts :products="frequentlyBoughtTogether" title="Frequently bought together" />
 
       <section class="detail-view__specs">
         <h2>Specifications</h2>

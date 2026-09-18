@@ -51,6 +51,7 @@ can see `/metrics` and its own shopper profile.
 | GET | `/api/categories` | no |
 | GET | `/api/products?category=&q=` | no |
 | GET | `/api/products/:id` | no |
+| GET | `/api/products/:id/frequently-bought-together` | no |
 | POST | `/api/products/:id/reviews` | yes |
 | GET | `/api/cart` | yes |
 | PUT | `/api/cart/:productId` | yes |
@@ -77,13 +78,13 @@ The `synthetic_*` tables you'll see in `tekkiech.db` aren't part of
 
 ## Real accounts on /metrics
 
-Every account gets a random persona and home city at signup
-(`shopper_profile.py`) as a starting guess. After every order, the
-persona gets recomputed from that account's full purchase history -
-whichever persona's usual categories cover the most of what they've
-actually bought wins (`predict_persona`). A purchase outside the
-current persona's usual categories gets flagged as an "unexpected
-purchase," same as the fake shoppers.
+Every account gets a random home city at signup (`shopper_profile.py`),
+but no persona yet - that starts out `None` until their first order.
+After every order, the persona gets (re)computed from that account's
+full purchase history - whichever persona's usual categories cover the
+most of what they've actually bought wins (`predict_persona`). A
+purchase outside the current persona's usual categories gets flagged
+as an "unexpected purchase," same as the fake shoppers.
 
 `GET /api/metrics/orders` blends real orders in with the fake shopper
 data, and signed-in admins can pick "Just me" in the persona filter to
@@ -91,3 +92,11 @@ see only their own orders.
 
 Only admin accounts can reach `/metrics` or see their own persona/city
 on the Account page - see "Auth" above for the admin login.
+
+## Frequently bought together
+
+Each product page shows a few products that tend to get bought
+alongside it, worked out from actual co-occurring orders - real orders
+and the fake shoppers' orders both count, added together. That means
+it has something to show even on a fresh database before anyone's
+placed a real order.

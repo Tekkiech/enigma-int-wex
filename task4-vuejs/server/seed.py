@@ -15,7 +15,7 @@ from sqlalchemy import select
 from auth import hash_password
 from database import SessionLocal, engine
 from models import Base, Category, Product, ProductImage, ProductReview, ProductTag, User
-from shopper_profile import random_profile
+from shopper_profile import initial_profile
 
 DUMMYJSON_URL = "https://dummyjson.com/products?limit=0"
 
@@ -96,14 +96,19 @@ def seed():
 
 def ensure_admin_account():
     with SessionLocal() as db:
-        if db.scalar(select(User).where(User.email == ADMIN_EMAIL)):
+        admin = db.scalar(select(User).where(User.email == ADMIN_EMAIL))
+        if admin:
+            if not admin.is_admin:
+                admin.is_admin = True
+                db.commit()
+                print(f"Promoted existing account to admin: {ADMIN_EMAIL}")
             return
         admin = User(
             name="Admin",
             email=ADMIN_EMAIL,
             password_hash=hash_password(ADMIN_PASSWORD),
             is_admin=True,
-            **random_profile(),
+            **initial_profile(),
         )
         db.add(admin)
         db.commit()

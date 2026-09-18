@@ -80,3 +80,9 @@ export function submitReview(productId, { rating, comment }) {
 export function fetchMetricsOrders() {
   return request('/api/metrics/orders');
 }
+
+// What else gets bought alongside this product, real orders and fake
+// shoppers combined.
+export function fetchFrequentlyBoughtTogether(productId) {
+  return request(`/api/products/${productId}/frequently-bought-together`);
+}

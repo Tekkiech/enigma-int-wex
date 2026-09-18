@@ -53,7 +53,7 @@ Table user {
   created_at             timestamp [default: `now()`]
   failed_login_attempts  integer   [not null, default: 0]
   locked_until           timestamp [note: 'Set for the duration of a lockout after too many failed logins, null otherwise']
-  persona                varchar   [note: 'Random, picked at signup - groups real orders on /metrics and flags out-of-persona purchases as unexpected']
+  persona                varchar   [note: 'Null until the first order, then set from purchase history - groups real orders on /metrics and flags out-of-persona purchases as unexpected']
   city                   varchar
   region                 varchar
   lat                    float

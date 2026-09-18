@@ -104,11 +104,12 @@ class User(Base):
     # Only admins can see /metrics and the persona/city fields below.
     is_admin: Mapped[bool] = mapped_column(nullable=False, default=False)
 
-    # Random guess at signup (see shopper_profile.py), then recomputed
-    # after every order to match what this account actually buys most.
-    # Groups real orders on the /metrics dashboard next to the fake
-    # shoppers, and a purchase outside the persona's usual categories
-    # gets flagged there as an "unexpected purchase" too.
+    # None until this account places its first order (see
+    # shopper_profile.py), then recomputed after every order to match
+    # what they actually buy most. Groups real orders on the /metrics
+    # dashboard next to the fake shoppers, and a purchase outside the
+    # persona's usual categories gets flagged there as an "unexpected
+    # purchase" too.
     persona: Mapped[str | None] = mapped_column(default=None)
     city: Mapped[str | None] = mapped_column(default=None)
     region: Mapped[str | None] = mapped_column(default=None)
