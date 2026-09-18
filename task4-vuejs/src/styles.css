@@ -1232,7 +1232,7 @@ input {
   border: 1px solid var(--line);
   border-radius: 6px;
   padding: 28px;
-  max-width: 480px;
+  max-width: 640px;
 }
 
 .account-card__avatar {
@@ -1271,9 +1271,14 @@ input {
 
 .account-card__stats {
   display: flex;
-  gap: 24px;
+  flex-wrap: wrap;
+  gap: 16px 24px;
   margin: 0 0 20px;
   font-family: var(--font-mono);
+}
+
+.account-card__stats > div {
+  min-width: 110px;
 }
 
 .account-card__stats dt {
