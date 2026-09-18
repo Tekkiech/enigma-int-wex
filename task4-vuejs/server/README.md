@@ -12,9 +12,13 @@ python3 -m venv venv
 source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-python seed.py    # creates the database and pulls in products from DummyJSON
-python app.py     # runs on http://localhost:5000
+python run.py     # sets up the database, adds fake /metrics data, then starts the server
 ```
+
+That runs `seed.py`, `../analytics/generate.py`, and `app.py` in order. You
+can still run any of those three on their own too - useful if you just
+want to reset the database (`seed.py`) or restart the server without
+regenerating the fake data (`app.py`).
 
 `tekkiech.db` and `venv/` are gitignored - they get created locally, not committed.
 
