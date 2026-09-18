@@ -11,8 +11,8 @@ import SupportView from './views/SupportView.vue';
 import MetricsView from './views/MetricsView.vue';
 import NotFoundView from './views/NotFoundView.vue';
 
-// Hash history keeps deep links (e.g. #/product/42) working when this is
-// deployed as a plain static build with no server-side rewrite rules.
+// Hash history (#/product/42 style URLs) means links still work even
+// though this is just a static build with no server routing.
 const router = createRouter({
   history: createWebHashHistory(),
   routes: [

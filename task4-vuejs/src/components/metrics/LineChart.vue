@@ -25,9 +25,7 @@ const props = defineProps({
 const canvas = ref(null);
 let chart;
 
-// A vertical hairline at the hovered position, snapped to the nearest data
-// point rather than requiring a pointer to land on the 2px line itself -
-// see dataviz skill: interaction.md, "the crosshair finds the X".
+// Draws a thin vertical line where the mouse is hovering.
 const crosshairPlugin = {
   id: 'crosshair',
   afterDatasetsDraw(c) {
@@ -113,9 +111,7 @@ function buildConfig() {
 
 onMounted(() => {
   chart = new Chart(canvas.value, buildConfig());
-  // See BarChart.vue's onMounted - same fallback-font-forever risk applies
-  // to axis tick text here, just with less visible consequence (numbers
-  // don't clip the way a long category label does).
+  // Redraw once fonts finish loading (see BarChart.vue for why).
   document.fonts?.ready.then(() => chart?.update());
 });
 

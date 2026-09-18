@@ -7,9 +7,8 @@ const catalog = useCatalogStore();
 const route = useRoute();
 const router = useRouter();
 
-// The search box lives in the header so it's reachable from any page —
-// typing here always searches the whole catalogue, not just whatever
-// category is currently open.
+// Search box lives in the header so you can search from any page - it
+// always searches everything, not just the category you're looking at.
 const searchValue = ref(route.name === 'search' ? String(route.query.q || '') : '');
 let debounceTimer;
 
@@ -20,9 +19,8 @@ watch(searchValue, (value) => {
   }, 300);
 });
 
-// Keep the box in sync if the search query changes some other way, e.g.
-// the browser's back/forward buttons, and clear it when the user leaves
-// the search page some other way (a nav link, the logo, a product card).
+// Keep the box in sync with the URL (back/forward buttons etc), and
+// clear it out once you leave the search page.
 watch(
   () => route.name,
   (name) => {

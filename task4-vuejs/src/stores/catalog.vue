@@ -22,14 +22,8 @@ export default defineStore('catalog', () => {
   const sortBy = ref('featured');
 
   const wishlist = ref({});
-  // productId -> quantity. A plain object keeps the cart trivially
-  // serializable and easy to inspect, and there's no need for anything
-  // fancier with at most a few dozen possible products.
-  const cart = ref({});
-
-  // Past orders for the signed-in user, newest first - as returned by
-  // the API, not derived from anything else here.
-  const orders = ref([]);
+  const cart = ref({}); // productId -> quantity
+  const orders = ref([]); // past orders, newest first
   const ordersLoading = ref(false);
 
   const cartItems = computed(() =>
@@ -54,8 +48,6 @@ export default defineStore('catalog', () => {
 
   const savedProducts = computed(() => products.value.filter((product) => wishlist.value[product.id]));
 
-  // DummyJSON's category display names are just Title Case of the slug
-  // for all 24 categories, so there's no need for a separate lookup call.
   function categoryName(slug) {
     return humanizeSlug(slug);
   }
@@ -153,11 +145,10 @@ export default defineStore('catalog', () => {
     sortBy.value = 'featured';
   }
 
-  // Cart/wishlist writes are optimistic and local-first, same as before
-  // sign-in existed: the UI updates immediately either way, and only
-  // reaches out to the API when someone's actually signed in. Signed
-  // out, this is exactly the old in-memory-only behavior - browsing,
-  // cart and wishlist still don't require an account.
+  // Cart and wishlist changes update the screen right away, then save to
+  // the server in the background if you're signed in. If you're not
+  // signed in, it just stays local - you can still browse and use the
+  // cart without an account.
   async function toggleWishlist(id) {
     const next = !wishlist.value[id];
     wishlist.value[id] = next;
@@ -166,7 +157,7 @@ export default defineStore('catalog', () => {
       if (next) await backend.putWishlistItem(id);
       else await backend.deleteWishlistItem(id);
     } catch {
-      wishlist.value[id] = !next; // revert on a failed sync
+      wishlist.value[id] = !next; // undo if saving failed
     }
   }
 
@@ -177,9 +168,8 @@ export default defineStore('catalog', () => {
     try {
       await backend.putCartItem(id, newQuantity);
     } catch {
-      // Leave the optimistic local update in place - a sync failure
-      // shouldn't yank an item back out of the cart the user just saw
-      // added; it'll reconcile next time syncFromServer runs.
+      // Keep the item in the cart even if saving failed - it'll sync
+      // properly next time.
     }
   }
 
@@ -208,10 +198,8 @@ export default defineStore('catalog', () => {
     }
   }
 
-  // Pulls the signed-in user's real cart/wishlist down and replaces
-  // whatever was there locally (guest-session items don't merge into
-  // an account - matches the fresh-slate framing the rest of the app
-  // already uses for signing in).
+  // Loads the signed-in user's real cart/wishlist from the server and
+  // replaces whatever was there before.
   async function syncFromServer() {
     const [cartItemsData, wishlistProducts] = await Promise.all([backend.fetchCart(), backend.fetchWishlist()]);
     cart.value = Object.fromEntries(cartItemsData.map((item) => [item.productId, item.quantity]));
@@ -224,9 +212,7 @@ export default defineStore('catalog', () => {
     orders.value = [];
   }
 
-  // Snapshots the current cart into a real order server-side and
-  // empties it - requires a signed-in session, same as the cart/
-  // wishlist API calls above.
+  // Turns the current cart into a real order and empties the cart.
   async function placeOrder() {
     const order = await backend.placeOrder();
     cart.value = {};
@@ -244,10 +230,8 @@ export default defineStore('catalog', () => {
     }
   }
 
-  // Rating is recomputed the same way app.py does it - the average of
-  // every review with a rating, this one included - so the number shown
-  // here matches what a re-fetch of the product would show, with no
-  // round trip needed to find out.
+  // Recompute the average rating right away, so it updates on screen
+  // without waiting to refetch the product.
   async function submitReview(productId, { rating, comment }) {
     const review = await backend.submitReview(productId, { rating, comment });
     const product = productById(productId);

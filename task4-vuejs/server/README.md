@@ -1,13 +1,8 @@
 # Tekkiech.Market API
 
-Flask + SQLAlchemy REST API for task4-vuejs: account, cart, wishlist,
-orders, and product/category browsing. The frontend calls this for
-everything now (`src/api/backend.js`) - DummyJSON is only ever touched
-by `seed.py`, once, to populate the local database; the running app
-never calls it directly.
-
-This has to be running for the frontend to work at all - `npm run dev`
-alone gets you a blank catalogue and a site that can't sign anyone in.
+Flask + SQLAlchemy API for task4-vuejs. Handles accounts, cart, wishlist,
+orders, and the product catalogue. The frontend needs this running or
+you just get a blank site.
 
 ## Setup
 
@@ -17,79 +12,56 @@ python3 -m venv venv
 source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
-alembic upgrade head            # creates tekkiech.db and all tables
-python seed.py                  # pulls the 194 DummyJSON products into it
-
-python app.py                   # runs on http://localhost:5000
+python seed.py    # creates the database and pulls in products from DummyJSON
+python app.py     # runs on http://localhost:5000
 ```
 
-`tekkiech.db` and `venv/` are gitignored - both are meant to be generated
-locally (or on whatever machine ends up running this), not committed.
+`tekkiech.db` and `venv/` are gitignored - they get created locally, not committed.
 
-## Where the database lives
-
-`DB_PATH` (env var, defaults to `tekkiech.db` next to this file) is the
-only thing that needs to change to move this - e.g. once this runs
-somewhere persistent instead of a laptop, point it at wherever that disk
-actually is. SQLAlchemy and Alembic both read it from `database.py`, so
-there's one place to change, not several.
+Want to run it somewhere else? Set the `DB_PATH` env var to point at a
+different file.
 
 ## Auth
 
-Session-cookie based, not tokens - `POST /api/auth/signup` or
-`/api/auth/login` sets a signed cookie via Flask's built-in session, and
-every `/api/cart`, `/api/wishlist`, `/api/orders`, `/api/products/:id/reviews`
-route requires it (`@login_required` in `auth.py`). Passwords are hashed
-with bcrypt (`auth.py`) before they ever reach the database - see the
-schema notes on `user.password_hash` for why that's the only column
-needed (bcrypt embeds its own salt in the stored string).
+Login uses a signed session cookie, not tokens. Passwords are hashed
+with bcrypt before they touch the database. Signup requires at least 8
+characters with a letter and a number. Login locks an account for 15
+minutes after 5 wrong attempts in a row.
 
-Signup and login enforce different things, on purpose. Signup checks
-password quality - at least 8 characters, a letter and a number
-(`password_requirement_errors` in `auth.py`) - since there's nothing to
-validate the shape of a login attempt against. Login instead tracks
-failed attempts per account and locks it for 15 minutes after 5 in a
-row (`user.failed_login_attempts`/`locked_until`), checked with a
-constant-time dummy-hash comparison so a nonexistent email doesn't
-respond any faster than a wrong password.
-
-`SECRET_KEY` (env var) signs the session cookie - the `dev-only-change-me`
-default is fine for local work, not for anything that leaves your machine.
+Set `SECRET_KEY` (env var) to something real before deploying anywhere -
+the default is only fine for messing around locally.
 
 ## Routes
 
-| Method | Path | Auth | |
-|---|---|---|---|
-| POST | `/api/auth/signup` | - | `{name, email, password}` |
-| POST | `/api/auth/login` | - | `{email, password}` |
-| POST | `/api/auth/logout` | - | |
-| GET | `/api/auth/me` | required | |
-| GET | `/api/categories` | - | |
-| GET | `/api/products?category=&q=` | - | includes `tags` and `reviews` per product |
-| GET | `/api/products/:id` | - | |
-| POST | `/api/products/:id/reviews` | required | `{rating, comment}`, recomputes the product's `rating` as the average of its reviews |
-| GET | `/api/cart` | required | |
-| PUT | `/api/cart/:productId` | required | `{quantity}` |
-| DELETE | `/api/cart/:productId` | required | |
-| GET | `/api/wishlist` | required | |
-| PUT | `/api/wishlist/:productId` | required | |
-| DELETE | `/api/wishlist/:productId` | required | |
-| POST | `/api/orders` | required | snapshots the cart into a new order, clears it |
-| GET | `/api/orders` | required | |
-| GET | `/api/metrics/orders` | - | backs `/metrics`; reads `synthetic_*` tables that only `analytics/generate.py` writes - `[]` if it hasn't been run |
+| Method | Path | Needs login? |
+|---|---|---|
+| POST | `/api/auth/signup` | no |
+| POST | `/api/auth/login` | no |
+| POST | `/api/auth/logout` | no |
+| GET | `/api/auth/me` | yes |
+| GET | `/api/categories` | no |
+| GET | `/api/products?category=&q=` | no |
+| GET | `/api/products/:id` | no |
+| POST | `/api/products/:id/reviews` | yes |
+| GET | `/api/cart` | yes |
+| PUT | `/api/cart/:productId` | yes |
+| DELETE | `/api/cart/:productId` | yes |
+| GET | `/api/wishlist` | yes |
+| PUT | `/api/wishlist/:productId` | yes |
+| DELETE | `/api/wishlist/:productId` | yes |
+| POST | `/api/orders` | yes |
+| GET | `/api/orders` | yes |
+| GET | `/api/metrics/orders` | no |
 
-## Migrations
+## Changing the schema
 
-```bash
-alembic revision --autogenerate -m "describe the change"
-alembic upgrade head
-```
+There's no migration tool here. Edit `models.py`, delete your local
+`tekkiech.db`, then run `python seed.py` again to rebuild it. That's
+fine since this is all throwaway dev data.
 
-`schema.dbml` is the diagram-friendly source of truth for the shape of
-this - `models.py` is its executable form. Nothing keeps them in sync
-automatically; if you change one, update the other by hand.
+`schema.dbml` is just a diagram of the tables for reference - it doesn't
+update itself, so change it by hand too if you touch `models.py`.
 
-The `synthetic_*` tables (see `analytics/README.md`) live in this same
-file but aren't part of this - they're created and cleared by
-`analytics/generate.py` directly, not Alembic, on purpose: they're demo
-data for `/metrics`, not part of the real app's schema.
+The `synthetic_*` tables you'll see in `tekkiech.db` aren't part of
+`models.py` - they're the fake `/metrics` data, created separately by
+`analytics/generate.py`. See `analytics/README.md`.

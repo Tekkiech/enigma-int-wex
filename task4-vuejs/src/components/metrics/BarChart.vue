@@ -8,10 +8,8 @@ Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip);
 const props = defineProps({
   labels: { type: Array, required: true },
   values: { type: Array, required: true },
-  // A single hex = sequential magnitude, same hue for every bar (a
-  // leaderboard - order carries the meaning, not color). An array of hex,
-  // one per bar = nominal categorical identity (each bar is a distinct
-  // named entity - a persona, not a rank).
+  // One color for every bar (like a leaderboard), or a list with one
+  // color per bar (like when each bar is a different person or category).
   colors: { type: [String, Array], required: true },
   valuePrefix: { type: String, default: '' },
   barThickness: { type: Number, default: 20 },
@@ -26,8 +24,7 @@ function formatValue(value) {
   return `${props.valuePrefix}${Number(value).toLocaleString(undefined, { maximumFractionDigits: 0 })}`;
 }
 
-// Value at the bar's tip, in a text token color (never the bar's own hue)
-// - see marks-and-anatomy.md: "text never wears the data color."
+// Draws the number at the end of each bar.
 const valueLabelPlugin = {
   id: 'valueLabels',
   afterDatasetsDraw(c) {
@@ -50,13 +47,9 @@ function barColor(index) {
 
 const Y_TICK_FONT = "12px 'Work Sans', sans-serif";
 
-// Chart.js's own auto-width for the category (y) axis under-measures here
-// - reproducibly clips the longest label regardless of font-load timing
-// (confirmed: "Budget Generalist" -> "udget Generalist" persists even
-// after document.fonts is fully loaded). Measuring every label ourselves
-// with the exact tick font and forcing that width via afterFit sidesteps
-// whatever Chart.js's internal calculation is getting wrong, rather than
-// guessing at the cause.
+// Chart.js sometimes doesn't leave enough room for long labels like
+// "Budget Generalist", so it gets cut off. This measures the real width
+// ourselves and tells Chart.js to use that instead.
 function measureMaxLabelWidth(ctx, labels) {
   ctx.save();
   ctx.font = Y_TICK_FONT;
@@ -65,12 +58,8 @@ function measureMaxLabelWidth(ctx, labels) {
   return max;
 }
 
-// Same fix, other end: the tip-label plugin draws past the bar's end, so
-// the widest formatted value (not just the longest bar) needs a right
-// margin reserved for it too, or the top bar's own label runs off the
-// canvas - see marks-and-anatomy.md, "a label that won't fit doesn't get
-// clipped." A fixed guess (the previous 56px) broke as soon as a value
-// crossed seven digits.
+// Same idea, but for the numbers at the end of each bar - a big number
+// needs more room than a small one.
 function measureMaxValueWidth(ctx, values) {
   ctx.save();
   ctx.font = VALUE_TIP_FONT;
@@ -141,13 +130,8 @@ function buildConfig() {
 
 onMounted(() => {
   chart = new Chart(canvas.value, buildConfig());
-  // Canvas text is painted once, not repainted on font load like DOM text
-  // is - if Work Sans/IBM Plex Mono are still downloading when this first
-  // draws, Chart.js measures and paints with the fallback font forever.
-  // That under-reserves space for the widest y-axis label, clipping it
-  // (the exact bug this fixes: "Budget Generalist" -> "udget Generalist").
-  // One forced update once the real fonts are confirmed loaded corrects
-  // both the measurement and the glyphs.
+  // If our fonts are still loading when the chart first draws, redraw
+  // once they're ready so the text doesn't look wrong/measure wrong.
   document.fonts?.ready.then(() => chart?.update());
 });
 

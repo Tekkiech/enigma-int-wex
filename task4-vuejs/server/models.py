@@ -1,10 +1,7 @@
-"""SQLAlchemy 2.0 declarative models - one class per table in schema.dbml.
-
-`Order.__tablename__ = "order"` is a reserved word in every SQL dialect.
-SQLAlchemy's dialects know this and auto-quote it in generated SQL, so the
-ORM/Core layer is unaffected - it only matters if you ever open the .db
-file directly (`sqlite3 tekkiech.db "SELECT * FROM \"order\""`).
-"""
+# The database tables, one class per table. See schema.dbml for a diagram.
+#
+# Note: "order" is a reserved SQL word, but SQLAlchemy handles that for us
+# automatically, so it's not something we need to worry about.
 
 from datetime import datetime, timezone
 
@@ -33,9 +30,8 @@ class Category(Base):
 class Product(Base):
     __tablename__ = "product"
 
-    # Matches the DummyJSON product id at seed time - not autoincrement,
-    # set explicitly by seed.py so cart/wishlist/order references line up
-    # with the same ids the frontend already knows from the DummyJSON era.
+    # id is set by seed.py, not auto-generated, so it matches the id
+    # DummyJSON gave the product originally.
     id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
     category_id: Mapped[int] = mapped_column(ForeignKey("category.id"), nullable=False)
     title: Mapped[str] = mapped_column(nullable=False)
@@ -69,8 +65,8 @@ class ProductReview(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
-    # Null for the reviews seed.py imported from DummyJSON - only a review
-    # posted through the API by a signed-in user has one of these.
+    # Empty for reviews we pulled from DummyJSON. Only set for a review
+    # someone actually posted through the site.
     user_id: Mapped[int | None] = mapped_column(ForeignKey("user.id"), default=None)
     reviewer_name: Mapped[str | None] = mapped_column(default=None)
     reviewer_email: Mapped[str | None] = mapped_column(default=None)
@@ -97,14 +93,11 @@ class User(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     name: Mapped[str | None] = mapped_column(default=None)
     email: Mapped[str] = mapped_column(unique=True, nullable=False)
-    # bcrypt's own encoded output ($2b$12$<22-char salt><31-char hash>) -
-    # algorithm, cost factor, salt and hash all live in this one string.
+    # Never the real password - just the bcrypt hash of it.
     password_hash: Mapped[str] = mapped_column(nullable=False)
     created_at: Mapped[datetime] = mapped_column(default=utcnow)
 
-    # Login lockout - see auth.py's LOCKOUT_THRESHOLD/LOCKOUT_MINUTES.
-    # failed_login_attempts resets to 0 on any successful login;
-    # locked_until is None except during an active lockout window.
+    # Used to lock an account after too many wrong passwords - see auth.py.
     failed_login_attempts: Mapped[int] = mapped_column(nullable=False, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(default=None)
 
@@ -159,8 +152,7 @@ class OrderItem(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     order_id: Mapped[int] = mapped_column(ForeignKey("order.id"), nullable=False)
     product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
-    # Snapshot at order time - price history, kept even if the product's
-    # live price changes later or it gets deactivated.
+    # The price when the order was placed, in case it changes later.
     unit_price: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
     quantity: Mapped[int] = mapped_column(nullable=False, default=1)
 

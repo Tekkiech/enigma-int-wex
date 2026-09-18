@@ -4,19 +4,17 @@ import { defineStore } from 'pinia';
 import * as backend from '../api/backend.js';
 import useCatalogStore from './catalog.vue';
 
-// A real account now: name/email/password go to the Flask API, which
-// hashes the password with bcrypt and never sees it again after that.
-// Signing in is what makes the cart and wishlist persist anywhere - see
-// catalog.vue, which falls back to local-only state for anyone not
-// signed in rather than requiring an account just to browse.
+// Keeps track of who's signed in. The actual account lives on the
+// server - this store just holds a copy of the current user and talks
+// to the API to sign up, log in, and log out.
 export default defineStore('account', () => {
   const user = ref(null); // { id, name, email } once signed in
   const loading = ref(false);
   const error = ref(null);
 
-  // Called once on app load: the Flask session cookie can outlive a
-  // page refresh even though this store's state doesn't, so check
-  // whether we're already signed in before assuming we're not.
+  // Runs once when the app loads. The server remembers you're signed in
+  // even after a page refresh (using a cookie), so this checks for that
+  // instead of assuming you're logged out.
   async function restoreSession() {
     try {
       user.value = await backend.fetchCurrentUser();
@@ -26,11 +24,8 @@ export default defineStore('account', () => {
     }
   }
 
-  // Separate from logIn on purpose: signup owns password quality (a
-  // confirmation match, length/complexity - all things Flask's
-  // /api/auth/signup also re-checks server-side, this just gives faster
-  // feedback), none of which apply to signing into an account that
-  // already exists.
+  // Checks the passwords match here first, so you get instant feedback
+  // instead of waiting on the server. The server checks again too.
   async function signUp({ name, email, password, passwordConfirm }) {
     error.value = null;
     if (password !== passwordConfirm) {
@@ -49,10 +44,6 @@ export default defineStore('account', () => {
     loading.value = false;
   }
 
-  // Separate from signUp on purpose: login owns brute-force resistance
-  // (Flask tracks failed attempts per account and locks it out after
-  // too many - see server/auth.py) rather than password quality, since
-  // there's nothing to validate the shape of on a login attempt.
   async function logIn({ email, password }) {
     loading.value = true;
     error.value = null;

@@ -15,15 +15,11 @@ function breakdownList(breakdown) {
 async function initMap() {
   const worldOsShare = await loadWorldOsShare();
 
-  // The page has just finished its initial layout, but wait a frame
-  // anyway before measuring the container: Leaflet reads its container's
-  // box size at construction time, and creating it too early (before a
-  // layout pass) makes it render tiles and the country layer at the
-  // wrong size - clipping content and leaving the rest of the container
-  // blank. Raced against a short timeout because rAF doesn't fire (or
-  // fires very late) while the tab is backgrounded, and a map opened in
-  // a background tab should still be ready once its visitor switches to
-  // it rather than waiting on a frame that may not come for a while.
+  // wait a frame before building the map - Leaflet measures its
+  // container as soon as it's created, and doing that too early gives
+  // it the wrong size (tiles look clipped/blank). Falls back to a short
+  // timeout too, since requestAnimationFrame won't fire while the tab
+  // is in the background.
   await Promise.race([
     new Promise((resolve) => requestAnimationFrame(resolve)),
     new Promise((resolve) => setTimeout(resolve, 150)),
@@ -36,10 +32,9 @@ async function initMap() {
     minZoom: 1,
     maxZoom: 8,
     worldCopyJump: true,
-    // Leaflet's own scrollWheelZoom stays off: a plain scroll over the
-    // map would otherwise zoom it instead of scrolling the page. Scroll
-    // zoom is wired up manually below, gated behind ctrl/cmd (see
-    // "Scroll to zoom" further down) so both gestures stay available.
+    // turned off so a normal scroll over the map still scrolls the
+    // page - scroll-to-zoom is added back further down, but gated
+    // behind ctrl/cmd so both gestures work
     scrollWheelZoom: false,
   });
 
@@ -79,10 +74,8 @@ async function initMap() {
   }
   renderLegend();
 
-  // Fill colours are resolved from CSS custom properties at draw time
-  // (see os-colors.js), so re-styling on theme change keeps the map and
-  // its legend in sync with the toggle instead of freezing at whichever
-  // theme was active when the map first drew.
+  // colors come from CSS variables (os-colors.js), so redraw on theme
+  // change or the map stays stuck on whichever theme it first loaded in
   document.addEventListener('themechange', () => {
     countryLayer.setStyle((feature) => ({
       fillColor: colorFor(feature.properties.topOs),
@@ -91,19 +84,13 @@ async function initMap() {
     renderLegend();
   });
 
-  // Belt-and-braces alongside the layout wait above: re-measure whenever
-  // the container's actual box size changes for any reason (window
-  // resize, the reveal-block's own entrance transform settling, fonts
-  // loading late and reflowing the page, etc.).
+  // re-measure any time the map's box changes size for any reason
+  // (window resize, late-loading fonts reflowing the page, etc.)
   new ResizeObserver(() => map.invalidateSize()).observe(document.getElementById('map'));
 
   // ---- Scroll to zoom, gated behind ctrl/cmd ----
-  // A plain scroll over the map keeps scrolling the page, same reasoning
-  // as the touch-drag gating below: an embedded map shouldn't be able to
-  // hijack the gesture visitors use to move around the rest of the page.
-  // Holding ctrl (Windows/Linux) or cmd (Mac) zooms instead, the same
-  // convention Google Maps and Mapbox use - and it works immediately,
-  // with no click-to-activate step required.
+  // holding ctrl (or cmd on Mac) while scrolling zooms the map, same as
+  // Google Maps - a plain scroll still just scrolls the page
   const mapEl = document.getElementById('map');
   mapEl.addEventListener(
     'wheel',

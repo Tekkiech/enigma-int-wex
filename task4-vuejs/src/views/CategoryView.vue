@@ -17,9 +17,8 @@ const props = defineProps({
 const catalog = useCatalogStore();
 onMounted(() => catalog.fetchProducts());
 
-// Filters are shared UI state (so the header search box can reach them),
-// so switching categories should start from a clean slate rather than
-// carrying over a chip or sort pick that may not even exist here.
+// reset filters when switching categories, since a chip/sort pick from
+// the last category might not even exist in this one
 watch(() => props.slug, () => catalog.resetFilters(), { immediate: true });
 
 const categoryName = computed(() => catalog.categoryName(props.slug));

@@ -1,7 +1,6 @@
-"""Flask REST API for Tekkiech.Market - the one process that has to stay
-running. Everything under /api/cart, /api/wishlist, /api/orders, and
-/api/auth/me needs a signed-in session; product/category browsing doesn't.
-"""
+# The backend API for Tekkiech.Market. Needs to be running for the
+# frontend to work. Most routes need you to be signed in - browsing
+# products and categories doesn't.
 
 import os
 from decimal import Decimal
@@ -29,22 +28,20 @@ CORS(app, supports_credentials=True, origins=os.environ.get("CORS_ORIGIN", "http
 
 
 def num(value):
-    """Decimal -> float for JSON; None passes through."""
+    # Decimal doesn't convert to JSON on its own, so turn it into a float.
     return float(value) if isinstance(value, Decimal) else value
 
 
 def product_load_options(relationship=None):
-    """selectinload for everything product_to_dict touches - images,
-    category, tags, reviews - either directly on Product, or through a
-    relationship that points at one (CartItem.product, OrderItem.product, ...).
-    """
+    # Tells SQLAlchemy to load a product's images/category/tags/reviews
+    # all at once, instead of one extra query per product per field.
     attrs = [Product.images, Product.category, Product.tags, Product.reviews]
     if relationship is None:
         return [selectinload(attr) for attr in attrs]
     return [selectinload(relationship).selectinload(attr) for attr in attrs]
 
 
-def product_to_dict(product: Product) -> dict:
+def product_to_dict(product):
     return {
         "id": product.id,
         "title": product.title,
@@ -63,7 +60,7 @@ def product_to_dict(product: Product) -> dict:
     }
 
 
-def review_to_dict(review: ProductReview) -> dict:
+def review_to_dict(review):
     return {
         "userId": review.user_id,
         "reviewerName": review.reviewer_name,
@@ -74,11 +71,11 @@ def review_to_dict(review: ProductReview) -> dict:
     }
 
 
-def cart_item_to_dict(item: CartItem) -> dict:
+def cart_item_to_dict(item):
     return {"productId": item.product_id, "quantity": item.quantity, "product": product_to_dict(item.product)}
 
 
-def order_to_dict(order: Order) -> dict:
+def order_to_dict(order):
     return {
         "id": order.id,
         "status": order.status,
@@ -401,13 +398,9 @@ def list_orders():
 
 @app.get("/api/metrics/orders")
 def metrics_orders():
-    """Backs the /metrics dashboard. synthetic_shopper/synthetic_order/
-    synthetic_order_line live in this same SQLite file but aren't part of
-    this app's Alembic-managed schema - see analytics/generate.py, the
-    only thing that ever writes them. If that script hasn't been run yet,
-    the tables don't exist and this returns an empty list rather than a
-    500.
-    """
+    # Feeds the /metrics page. The synthetic_* tables only exist once
+    # analytics/generate.py has been run - if it hasn't, just send back
+    # an empty list instead of erroring out.
     with SessionLocal() as db:
         exists = db.scalar(
             text("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'synthetic_order_line'")
@@ -459,5 +452,8 @@ def metrics_orders():
 
 
 if __name__ == "__main__":
-    Base.metadata.create_all(engine)  # convenience for local dev; use Alembic for real migrations
+    # Makes sure every table from models.py exists. Won't fix an existing
+    # table if you change its columns later - you'd need a fresh database
+    # for that.
+    Base.metadata.create_all(engine)
     app.run(port=int(os.environ.get("PORT", 5000)), debug=True)

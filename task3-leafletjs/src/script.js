@@ -7,17 +7,16 @@ const NETWORK_TYPE = {
   district: { label: 'District heating', color: '#00478a' },
 };
 
-// Nudges the district marker off the communal one at the same local
-// authority point so both are visible rather than fully overlapping.
+// shifts the district marker a bit so it doesn't sit right on top of
+// the communal marker at the same spot
 const DISTRICT_OFFSET = [0.014, -0.009];
 
 const FLAME_PATH =
   'M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z';
 
-// All 14 local-authority/network-type counts in the dataset span 2 to
-// 231; map that range onto a 9-20px radius so marker size stays a fair
-// read of scale (area-proportional, hence the square root) without a
-// couple of outliers dwarfing everything else.
+// counts in the data range from 2 to 231 - scale those onto a 9-20px
+// radius (square root, so it's the marker's AREA that's proportional,
+// not just its width) so one huge number doesn't dwarf all the others
 const COUNT_DOMAIN = [2, 231];
 const RADIUS_RANGE = [9, 20];
 
@@ -54,18 +53,16 @@ const map = L.map('map', {
   zoomControl: false,
   minZoom: 8,
   maxZoom: 16,
-  // A page-scroll mouse wheel over the map would otherwise zoom the map
-  // instead of scrolling the page; zoom buttons, double-click and touch
-  // pinch remain available.
+  // without this, scrolling the page over the map zooms it instead -
+  // the zoom buttons and pinch-to-zoom still work fine
   scrollWheelZoom: false,
 });
 
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map);
 
-// CARTO's free raster basemaps now need an API key, so we use standard OSM
-// tiles instead and mute them with a CSS filter (see styles.css) so the
-// markers stay the highest-contrast thing on screen.
+// using plain OSM map tiles, toned down a bit in styles.css so the
+// markers stand out more
 L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
   attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
   subdomains: 'abc',
@@ -149,17 +146,15 @@ zoneToggle.addEventListener('change', () => {
   }
 });
 
-// Collapse the filter/key panel by default on narrow screens so the map
-// is the first thing visible, but leave it open on wider layouts where
-// it sits alongside the map rather than above it.
+// start the legend closed on small screens (map first), open on bigger
+// screens where it sits next to the map instead of above it
 const legend = document.getElementById('legend');
 legend.open = window.matchMedia('(min-width: 900px)').matches;
 legend.addEventListener('toggle', () => map.invalidateSize());
 window.addEventListener('resize', () => map.invalidateSize());
 
-// On touch devices, require a deliberate tap before the map captures
-// drag gestures, so a single-finger swipe still scrolls the page until
-// the visitor chooses to interact with the map.
+// on touch screens, don't let the map grab swipes until you tap it
+// first - otherwise you can't scroll the page past the map
 if (window.matchMedia('(pointer: coarse)').matches) {
   map.dragging.disable();
 

@@ -1,9 +1,6 @@
-// Aggregation over the synthetic order-history dataset - see
-// task4-vuejs/analytics/ for how it's generated and GET /api/metrics/orders
-// (server/app.py) for how it's served. Every function here is a pure
-// function of a records array passed in by the caller (fetched once in
-// MetricsView.vue) - nothing in this module holds its own copy of the
-// data, unlike the old build-time JSON import this replaced.
+// Helper functions that turn the raw order records into the numbers each
+// chart on the metrics page needs. They all just take an array of
+// records and return something simpler - no state is kept in here.
 
 const MONTH_LABEL = new Intl.DateTimeFormat(undefined, { year: 'numeric', month: 'short' });
 
@@ -11,31 +8,31 @@ export function personaList(records) {
   return [...new Set(records.map((r) => r.persona))].sort();
 }
 
-export function filterByPersona(list, persona) {
-  return persona === 'all' ? list : list.filter((r) => r.persona === persona);
+export function filterByPersona(records, persona) {
+  return persona === 'all' ? records : records.filter((r) => r.persona === persona);
 }
 
-export function computeKpis(list) {
-  const revenue = list.reduce((sum, r) => sum + r.lineTotal, 0);
-  const orderIds = new Set(list.map((r) => r.orderId));
-  const outlierCount = list.filter((r) => r.isOutlier).length;
+export function computeKpis(records) {
+  const revenue = records.reduce((sum, r) => sum + r.lineTotal, 0);
+  const orderIds = new Set(records.map((r) => r.orderId));
+  const outlierCount = records.filter((r) => r.isOutlier).length;
   return {
     revenue,
     orderCount: orderIds.size,
     avgOrderValue: orderIds.size ? revenue / orderIds.size : 0,
-    outlierRate: list.length ? outlierCount / list.length : 0,
+    outlierRate: records.length ? outlierCount / records.length : 0,
   };
 }
 
-// One point per calendar month across the dataset's full span, in order -
-// including months with zero activity for the current filter, so a line
-// chart doesn't silently skip a persona's quiet months. allRecords sets
-// the span; list (the current filter) fills in the values.
-export function monthlySeries(list, allRecords) {
+// Revenue and order count for every month in the dataset. allRecords is
+// used just to figure out which months exist, so a month with zero
+// orders for the current filter still shows up as $0 instead of
+// disappearing from the chart.
+export function monthlySeries(records, allRecords) {
   const allMonths = [...new Set(allRecords.map((r) => r.date.slice(0, 7)))].sort();
   const byMonth = new Map(allMonths.map((month) => [month, { revenue: 0, orders: new Set() }]));
 
-  for (const r of list) {
+  for (const r of records) {
     const month = r.date.slice(0, 7);
     const bucket = byMonth.get(month);
     bucket.revenue += r.lineTotal;
@@ -50,48 +47,42 @@ export function monthlySeries(list, allRecords) {
   }));
 }
 
-// Top N categories by revenue, everything past that folded into "Other" -
-// a magnitude comparison across ~24 categories reads as a leaderboard, not
-// as 24 identities, so this stays a sequential (one-hue) bar chart rather
-// than a categorical one - see chartTokens.js.
-export function categoryBreakdown(list, topN = 8) {
+// Top categories by revenue, with everything past that grouped into "Other".
+export function categoryBreakdown(records, topCount = 8) {
   const totals = new Map();
-  for (const r of list) totals.set(r.category, (totals.get(r.category) || 0) + r.lineTotal);
+  for (const r of records) totals.set(r.category, (totals.get(r.category) || 0) + r.lineTotal);
 
   const sorted = [...totals.entries()].sort((a, b) => b[1] - a[1]);
-  const top = sorted.slice(0, topN);
-  const rest = sorted.slice(topN).reduce((sum, [, revenue]) => sum + revenue, 0);
+  const top = sorted.slice(0, topCount);
+  const restTotal = sorted.slice(topCount).reduce((sum, [, revenue]) => sum + revenue, 0);
 
   const rows = top.map(([category, revenue]) => ({ category, revenue }));
-  if (rest > 0) rows.push({ category: 'Other', revenue: rest });
+  if (restTotal > 0) rows.push({ category: 'Other', revenue: restTotal });
   return rows;
 }
 
-// Always computed against the full dataset, independent of the persona
-// filter - filtering this chart down to one persona would just draw a
-// single bar, which defeats its point (comparing personas against each
-// other). Callers pass the unfiltered records for that reason.
+// Always uses every record, ignoring the persona filter - filtering this
+// one down to a single persona would just leave one bar, which isn't
+// useful for comparing personas against each other.
 export function personaBreakdown(records) {
   const totals = new Map();
   for (const r of records) totals.set(r.persona, (totals.get(r.persona) || 0) + r.lineTotal);
   return [...totals.entries()].sort((a, b) => b[1] - a[1]).map(([persona, revenue]) => ({ persona, revenue }));
 }
 
-export function outlierSample(list, limit = 8) {
-  return list
+export function outlierSample(records, limit = 8) {
+  return records
     .filter((r) => r.isOutlier)
     .sort((a, b) => b.date.localeCompare(a.date))
     .slice(0, limit);
 }
 
-// One row per shopper city - a location is assigned once per shopper (see
-// analytics/locations.py), so every line item for the same userId shares
-// the same city/region/lat/lng, and grouping by city here is really
-// grouping by "the shoppers who live there."
-export function locationBreakdown(list) {
+// One row per city. A shopper's city never changes between orders, so
+// this is really grouping by "which shoppers live here".
+export function locationBreakdown(records) {
   const byCity = new Map();
 
-  for (const r of list) {
+  for (const r of records) {
     if (!byCity.has(r.city)) {
       byCity.set(r.city, {
         city: r.city,
@@ -103,21 +94,21 @@ export function locationBreakdown(list) {
         personaCounts: new Map(),
       });
     }
-    const bucket = byCity.get(r.city);
-    bucket.revenue += r.lineTotal;
-    bucket.orderIds.add(r.orderId);
-    bucket.personaCounts.set(r.persona, (bucket.personaCounts.get(r.persona) || 0) + 1);
+    const city = byCity.get(r.city);
+    city.revenue += r.lineTotal;
+    city.orderIds.add(r.orderId);
+    city.personaCounts.set(r.persona, (city.personaCounts.get(r.persona) || 0) + 1);
   }
 
   return [...byCity.values()]
-    .map((b) => ({
-      city: b.city,
-      region: b.region,
-      lat: b.lat,
-      lng: b.lng,
-      revenue: b.revenue,
-      orderCount: b.orderIds.size,
-      topPersona: [...b.personaCounts.entries()].sort((a, c) => c[1] - a[1])[0][0],
+    .map((city) => ({
+      city: city.city,
+      region: city.region,
+      lat: city.lat,
+      lng: city.lng,
+      revenue: city.revenue,
+      orderCount: city.orderIds.size,
+      topPersona: [...city.personaCounts.entries()].sort((a, b) => b[1] - a[1])[0][0],
     }))
     .sort((a, b) => b.revenue - a.revenue);
 }

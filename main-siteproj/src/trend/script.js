@@ -55,8 +55,8 @@ function buildChart() {
             padding: 24,
             font: { family: 'JetBrains Mono', size: 12 },
           },
-          // Keep the default toggle-series-visibility behaviour, and
-          // additionally drive the drill-down chart below.
+          // still toggles the series like normal, but also updates the
+          // drill-down chart below
           onClick: (event, legendItem, legend) => {
             Chart.defaults.plugins.legend.onClick(event, legendItem, legend);
             showDrillDown(legendItem.text);
@@ -88,9 +88,9 @@ function updateChartTheme() {
 buildChart();
 
 // ---- Drill-down: top 10 countries for whichever OS was clicked ----
-// Built from the same per-country dataset the map and table pages use,
-// fetched only once someone actually clicks a legend key rather than on
-// page load, so the trend page's own load stays light.
+// Uses the same per-country data as the map/table pages, but only
+// fetches it once you actually click a legend key, so this page's own
+// load stays light.
 
 let drillDownChart;
 let drillDownDataPromise;
@@ -110,7 +110,7 @@ async function showDrillDown(os) {
   document.getElementById('drilldown-hint').textContent = `Share of visits from ${os}, highest first, August 2026.`;
 
   const worldOsShare = await loadCountryTotals();
-  if (activeOs !== os) return; // a later click won while this fetch was in flight
+  if (activeOs !== os) return; // you clicked something else while this was loading
 
   const top = worldOsShare.features
     .map((f) => ({ name: f.properties.name, share: f.properties.breakdown.find((b) => b.os === os)?.share }))

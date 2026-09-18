@@ -1,8 +1,8 @@
 /*
-  One colour per OS, shared by the chart, map and table so the same
-  colour always means the same OS across all three. Values live as CSS
-  custom properties in styles.css (--os-*) so the palette swaps with the
-  light/dark theme automatically; this just reads them back into JS.
+  One color per OS, used everywhere (chart, map, table) so the same OS
+  always looks the same. Colors live in styles.css as CSS variables
+  (--os-*) so they can change with the light/dark theme - this file
+  just reads them back out into JS.
 */
 const CSS_VAR_BY_OS = {
   Android: '--os-android',

@@ -1,6 +1,5 @@
-"""Engine and session setup. A single SQLite file on disk - see the DB_PATH
-env var if you want it somewhere other than this directory (e.g. once this
-moves to the homelab, pointed at /mnt/storage)."""
+# Sets up the database connection. Uses tekkiech.db by default, or
+# wherever DB_PATH points to.
 
 import os
 from pathlib import Path

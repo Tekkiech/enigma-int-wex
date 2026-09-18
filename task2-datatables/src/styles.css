@@ -1,9 +1,6 @@
 /*
-  Palette matched by eye from screenshots of the North East Evidence Hub
-  (evidencehub.northeast-ca.gov.uk) — black chrome, an emerald-teal accent,
-  warm light-gray section backgrounds, and a houndstooth motif above the
-  footer. Hex values and the font pairing (Poppins/Inter) are a best-effort
-  stand-in, not lifted from the site's own CSS.
+  colors copied by eye from screenshots of the North East Evidence Hub
+  site - black header, teal accent, light gray background
 */
 :root {
   --neh-black: #15181b;

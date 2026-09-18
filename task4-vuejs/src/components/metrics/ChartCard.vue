@@ -6,8 +6,7 @@ defineProps({
   caption: { type: String, default: '' },
 });
 
-// Every chart ships with a table-view twin - same values, no hover
-// required. This toggle is the switch between them, not a separate page.
+// Lets you flip between the chart and a plain table of the same data.
 const showTable = ref(false);
 </script>
 

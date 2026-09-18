@@ -1,11 +1,6 @@
 /*
-  Real published figures, not the pre-prod page's live dataset (see README).
-
-  Source: DESNZ, "Heat Networks registered under the Heat Network (Metering
-  and Billing) Regulations", December 2022 release — tables 1.2b (networks
-  by local authority and network type) and 1.3c (customers by local
-  authority and customer type), filtered to the seven North East Mayoral
-  Strategic Authority local authorities.
+  Real numbers from the government's heat networks register (December
+  2022), just the seven North East local authorities.
   https://www.data.gov.uk/dataset/f547129e-a722-4992-9f37-baa3b1a516a7/heat-networks-registered-under-the-heat-network-metering-and-billing-regulations
 */
 

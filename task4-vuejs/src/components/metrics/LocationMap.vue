@@ -15,10 +15,9 @@ let markerLayer;
 const MIN_RADIUS = 6;
 const MAX_RADIUS = 28;
 
-// Area-proportional, not radius-proportional - scaling radius linearly
-// with revenue exaggerates the gap between a big city and a small one far
-// beyond the actual ratio, since a circle's apparent size is its area.
-// sqrt keeps the visual impression honest.
+// We use sqrt here instead of just scaling the radius directly, because a
+// circle's size looks bigger than its radius - a straight scale would make
+// the biggest city look way more dominant than it should.
 function radiusFor(revenue, maxRevenue) {
   if (maxRevenue <= 0) return MIN_RADIUS;
   const t = Math.sqrt(revenue / maxRevenue);
@@ -33,9 +32,7 @@ function humanize(slug) {
   return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-// Tooltip content built as real DOM nodes with textContent, not an HTML
-// string with values spliced in - see dataviz skill, interaction.md:
-// "labels are untrusted data - use textContent."
+// Builds the popup that shows up when you hover a dot on the map.
 function buildTooltip(row) {
   const wrap = document.createElement('div');
   wrap.className = 'location-map__tooltip';
@@ -64,7 +61,7 @@ function renderMarkers() {
   for (const row of props.rows) {
     const marker = L.circleMarker([row.lat, row.lng], {
       radius: radiusFor(row.revenue, maxRevenue),
-      color: CHROME.surface, // 2px surface ring so overlapping circles stay legible
+      color: CHROME.surface, // white ring so overlapping circles are easier to tell apart
       weight: 2,
       fillColor: SEQUENTIAL_BLUE[500],
       fillOpacity: 0.72,
@@ -84,9 +81,8 @@ onMounted(() => {
     center: [39.5, -98.35],
     zoom: 4,
     zoomControl: true,
-    // A page-scroll mouse wheel over the map would otherwise zoom the map
-    // instead of scrolling the page; zoom buttons, double-click and touch
-    // pinch remain available - same convention as task3-leafletjs.
+    // Off, so scrolling the mouse wheel over the map scrolls the page
+    // instead of zooming the map. You can still zoom with the buttons.
     scrollWheelZoom: false,
   });
 

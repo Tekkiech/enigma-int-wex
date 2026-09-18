@@ -1,30 +1,11 @@
-# Synthetic shopping data
+# Fake shopper data
 
-`generate.py` fabricates 18 months of order history for a batch of
-synthetic shoppers, feeding the Chart.js + Leaflet dashboard at
-`/metrics`. DB-only, start to finish: it reads the real product catalogue
-out of `../server/tekkiech.db` and writes the generated shoppers straight
-back into that same file, in three tables of their own -
-`synthetic_shopper`, `synthetic_order`, `synthetic_order_line` -
-deliberately separate from the live app's `user`/`order`/`order_item`
-tables (`server/models.py`), so a synthetic shopper never mixes into the
-real account system. Nothing in this pipeline reads or writes a JSON
-file; `GET /api/metrics/orders` (`server/app.py`) queries these tables
-directly and the frontend fetches from there.
-
-Real classes, not dataclasses, and the generating happens as methods on
-the objects it's about, not a pile of free functions: `Catalogue` loads
-and groups the product data; `Persona` (`personas.py`) holds a shopper
-archetype's category weights as a plain attribute and its
-`choose_category` method *is* the generating step; `Shopper`
-(a real name from `names.py`, a `Persona`, a `Location`) has a
-`place_orders` method that builds its own `Order`/`OrderLine` objects;
-`SeasonalCalendar` draws Nov/Dec-weighted dates; `SyntheticStore` owns
-the three tables and the SQL that writes to them; `OrderGenerator` ties
-the rest together.
-
-Stdlib only, no venv needed - writes to `../server/tekkiech.db` by
-default (or `$DB_PATH`, same env var `server/database.py` uses):
+`generate.py` makes up 18 months of order history for a bunch of fake
+shoppers, so the `/metrics` dashboard has something to chart. No JSON
+files involved - it reads the real products straight out of
+`../server/tekkiech.db` and writes the fake shoppers back into that same
+file, in their own tables (`synthetic_shopper`, `synthetic_order`,
+`synthetic_order_line`) so they never mix with real accounts.
 
 ```bash
 cd task4-vuejs/analytics
@@ -32,44 +13,28 @@ python3 generate.py                       # writes to tekkiech.db
 python3 generate.py --seed 7 --users 100 --months 24
 ```
 
-Re-running clears the three tables and replaces them - it doesn't append
-run after run.
+No packages to install, just plain Python. Running it again wipes the
+old fake data and makes fresh data - it doesn't pile up.
 
-## How it generates a "shopper"
+## How a shopper gets made
 
-Each synthetic user gets a real name (`names.py`, a first/last pool, no
-external dependency) and a persona from `personas.py` - a category-weight
-map (`tech-enthusiast`, `home-cook`, `fashion-forward`, etc.) plus an
-average order count for the year. `Persona.choose_category` is called
-once per line item: with an 8% independent chance it ignores the
-persona's weights entirely and draws from a uniformly random category
-instead - that's the whole mechanism behind a tech buyer occasionally
-buying a kiwi or a plant pot. No special-cased "quirky" logic, just noise
-on top of signal.
+Each fake shopper gets a random name, a persona (`tech-enthusiast`,
+`home-cook`, etc. - see `personas.py`) that decides what categories they
+usually buy from, and a home city with real coordinates. Most purchases
+match the persona, but there's a small random chance (8%) of buying
+something totally unrelated, so the data doesn't look too clean.
 
-Order volume is also weighted by calendar month - a Nov/Dec holiday bump,
-a mild Jan/Feb dip - so a line chart of orders over time has actual shape
-instead of flat noise.
-
-Each shopper also gets a home city from `locations.py` - 18 real US
-cities with real coordinates, picked independently of persona (no
-invented correlation between what someone buys and where they live).
-It's assigned once per shopper, not per order, the same way a persona is.
+Orders also lean toward November/December, so there's an actual holiday
+bump in the charts instead of flat noise.
 
 ## Tables
 
 ```
-synthetic_shopper   id, name, persona, city, region, lat, lng
-synthetic_order     id, shopper_id -> synthetic_shopper, order_date
-synthetic_order_line  id, order_id -> synthetic_order,
-                       product_id (-> the app's own product table,
-                       no FK - this script doesn't own that schema),
-                       quantity, is_outlier
+synthetic_shopper     id, name, persona, city, region, lat, lng
+synthetic_order       id, shopper_id, order_date
+synthetic_order_line  id, order_id, product_id, quantity, is_outlier
 ```
 
-`GET /api/metrics/orders` joins all three plus `product`/`category` and
-returns the same flat shape the dashboard always consumed - one record
-per order line, `orderId` included for anything that needs order-level
-aggregation (average order value, items per order) rather than
-line-item-level. If the tables don't exist yet (generator never run),
-the endpoint returns `[]` instead of a 500.
+`GET /api/metrics/orders` in the Flask app joins these with the real
+product/category tables and hands the result to the dashboard. If you
+haven't run the generator yet, it just returns an empty list.

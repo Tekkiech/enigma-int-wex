@@ -1,11 +1,9 @@
-"""One-time seed: pulls the full DummyJSON catalogue and writes it into
-category/product/product_image/product_tag/product_review. Safe to re-run
-- it upserts by id rather than duplicating rows. After this runs, the live
-app never calls DummyJSON again; api/products serves straight from the
-local database.
-
-    python seed.py
-"""
+# Downloads all the products from DummyJSON and saves them to our own
+# database, so the app never has to call DummyJSON again after this.
+# Safe to run more than once - it updates existing products instead of
+# duplicating them.
+#
+#   python seed.py
 
 import sys
 from datetime import datetime, timezone
@@ -19,7 +17,7 @@ from models import Base, Category, Product, ProductImage, ProductReview, Product
 DUMMYJSON_URL = "https://dummyjson.com/products?limit=0"
 
 
-def humanize_slug(slug: str) -> str:
+def humanize_slug(slug):
     return " ".join(word.capitalize() for word in slug.split("-"))
 
 
@@ -60,8 +58,8 @@ def seed():
             product.thumbnail = raw.get("thumbnail")
             product.is_active = True
 
-            # Full replace of images/tags/reviews, simplest way to stay
-            # in sync with DummyJSON on a re-run.
+            # Clear out and re-add images/tags/reviews each time, so a
+            # re-run always matches whatever DummyJSON has right now.
             product.images.clear()
             for url in raw.get("images", []):
                 product.images.append(ProductImage(url=url))
@@ -72,7 +70,10 @@ def seed():
 
             product.reviews.clear()
             for review in raw.get("reviews", []):
-                created_at = datetime.fromisoformat(review["date"].replace("Z", "+00:00")) if review.get("date") else datetime.now(timezone.utc)
+                if review.get("date"):
+                    created_at = datetime.fromisoformat(review["date"].replace("Z", "+00:00"))
+                else:
+                    created_at = datetime.now(timezone.utc)
                 product.reviews.append(
                     ProductReview(
                         reviewer_name=review.get("reviewerName"),

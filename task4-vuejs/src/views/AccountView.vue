@@ -11,12 +11,9 @@ const mode = ref('signup');
 const signupForm = reactive({ name: '', email: '', password: '', passwordConfirm: '' });
 const loginForm = reactive({ email: '', password: '' });
 
-// Not a plain onMounted check: on a fresh page load this view can mount
-// before App.vue's restoreSession() (async, checking the session cookie)
-// resolves, so account.user is still null at that exact instant even
-// when the user is actually signed in. Watching it, rather than reading
-// it once, catches both cases - already signed in when this mounts, or
-// signed in moments later once the session check comes back.
+// account.user might not be set yet when this page loads, since
+// checking the login cookie takes a moment. Watching it (instead of
+// just checking once) catches it whenever it's ready.
 watch(
   () => account.user,
   (user) => {
@@ -33,8 +30,7 @@ function switchMode(next) {
 async function submitSignUp() {
   await account.signUp({ ...signupForm });
   if (account.user) {
-    // Order history is handled by the watch() above - it fires the
-    // moment account.user is set, this included.
+    // order history loads on its own, via the watch() above
     signupForm.name = '';
     signupForm.email = '';
     signupForm.password = '';

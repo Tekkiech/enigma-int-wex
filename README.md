@@ -63,28 +63,21 @@ npm run build # production build
 
 **Live:** [enigmatask4-vuejs.vercel.app](https://enigmatask4-vuejs.vercel.app/)
 
-A [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) storefront, "Tekkiech.Market", backed by a [Flask](https://flask.palletsprojects.com/) + [SQLAlchemy](https://www.sqlalchemy.org/) REST API (`server/`) over a local SQLite database, seeded once from [DummyJSON](https://dummyjson.com/) (194 products, 24 categories) rather than called live. Native `<button>`/`<select>`/`<input>` throughout, no component-kit dependency. The visual design (near-white/black chrome, a single burnt-orange accent, Work Sans + IBM Plex Mono) matches a supplied reference mockup pixel-for-pixel in its `oklch()` colour tokens, typography and layout.
+A [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) storefront called "Tekkiech.Market". Products, accounts, cart, and orders are all real, served by a [Flask](https://flask.palletsprojects.com/) API (`server/`) backed by SQLite, seeded once from [DummyJSON](https://dummyjson.com/). There's also a `/metrics` page with a Chart.js + Leaflet dashboard built from fake shopper data (`analytics/`).
 
-- `server/`: `models.py` (10 SQLAlchemy tables, `schema.dbml` as the diagram source), `app.py` (bcrypt auth with signup password rules and login-attempt lockout, public read-only catalogue routes, `@login_required` cart/wishlist/order/review routes), `seed.py` (the only file that ever calls DummyJSON)
-- `src/stores/catalog.vue` and `account.vue` (Pinia stores as plain `.vue` files, no `<template>`) mirror the API: cart/wishlist writes are local-first and only sync when signed in, so browsing still needs no account; `POST /api/orders` snapshots the cart into a real order and clears it
-- `src/views/`: searchable category tiles on Home, a filterable/sortable grid per category, a product detail page with gallery/specs/reviews (rate and comment when signed in, saved to the DB), deals, saved items, cart with checkout, account with separate sign-up/sign-in forms and order history, a Chart.js + Leaflet shopper-metrics dashboard, and a static Support page (FAQ, delivery, returns)
-- `src/router.js` uses hash-based history for deep links on a plain static host
-- `analytics/`: a DB-only generator (`generate.py`, stdlib only, real classes not dataclasses) that fabricates 18 months of persona-driven, geolocated order history for named synthetic shoppers, writing it straight into `synthetic_*` tables in the same SQLite file - separate from the live app's own tables, not from the database itself. `GET /api/metrics/orders` serves them to the `/metrics` dashboard; see `analytics/README.md`
-
-The frontend alone (`npm run dev`) gets a blank catalogue, a site nobody can sign into, and an empty `/metrics`: the backend has to be running too.
+This one needs three things running at once: the API, the frontend, and (optionally) the fake data generator.
 
 ```bash
 cd task4-vuejs/server
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-alembic upgrade head  # creates the database and all tables
-python seed.py         # pulls the catalogue in from DummyJSON, once
-python app.py           # runs on http://localhost:5000
+python seed.py    # sets up the database and pulls in products from DummyJSON
+python app.py     # runs on http://localhost:5000
 ```
 
 ```bash
 cd task4-vuejs/analytics
-python3 generate.py    # optional - fills /metrics with synthetic shoppers
+python3 generate.py    # optional - fills /metrics with fake shoppers
 ```
 
 ```bash
@@ -94,7 +87,7 @@ npm run dev   # Parcel dev server, http://localhost:1350
 npm run build # production build
 ```
 
-Full route table, schema notes, and migration workflow: `task4-vuejs/server/README.md`.
+More detail on the API and database: `task4-vuejs/server/README.md`.
 
 ---
 

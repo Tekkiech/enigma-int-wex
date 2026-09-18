@@ -43,18 +43,15 @@ onMounted(load);
 const personaFilter = ref('all');
 const personas = computed(() => personaList(records.value));
 
-// Color assigned by persona identity (alphabetical order, fixed for the
-// page's lifetime), never by revenue rank - see dataviz skill's
-// anti-patterns.md: "color follows the entity, never its rank." The bars
-// below are sorted by revenue for readability, but a persona keeps the
-// same color regardless of where it lands in that sort.
+// Give each persona its own fixed color, so a persona's bar is always
+// the same color no matter how the bars get sorted.
 const personaColor = computed(() => Object.fromEntries(personas.value.map((name, i) => [name, CATEGORICAL[i]])));
 
 const filtered = computed(() => filterByPersona(records.value, personaFilter.value));
 const kpis = computed(() => computeKpis(filtered.value));
 const months = computed(() => monthlySeries(filtered.value, records.value));
 const categories = computed(() => categoryBreakdown(filtered.value));
-const personaRevenue = computed(() => personaBreakdown(records.value)); // always the full dataset - see metrics.js
+const personaRevenue = computed(() => personaBreakdown(records.value)); // always uses everyone, not just the filtered persona
 const outliers = computed(() => outlierSample(filtered.value));
 const locations = computed(() => locationBreakdown(filtered.value));
 
@@ -77,10 +74,6 @@ function formatDate(iso) {
   <div class="metrics-view">
     <Breadcrumbs :items="[{ label: 'Home', to: '/' }, { label: 'Metrics' }]" />
     <h1>Shopper metrics</h1>
-    <p class="metrics-view__intro">
-      Revenue and order patterns from a synthetic shopper dataset - see
-      <code>task4-vuejs/analytics/</code> for how it's generated. Not live sales data.
-    </p>
 
     <LoadingState v-if="loading" label="Loading shopper data…" />
     <ErrorState v-else-if="error" :message="error" @retry="load" />
@@ -108,7 +101,7 @@ function formatDate(iso) {
       </div>
 
       <div class="metrics-grid">
-        <ChartCard title="Revenue over time" caption="Monthly, current filter">
+        <ChartCard title="Revenue over time">
           <template #chart>
             <LineChart
               :labels="months.map((m) => m.label)"
@@ -128,7 +121,7 @@ function formatDate(iso) {
           </template>
         </ChartCard>
 
-        <ChartCard title="Orders over time" caption="Monthly, current filter">
+        <ChartCard title="Orders over time">
           <template #chart>
             <LineChart
               :labels="months.map((m) => m.label)"
@@ -146,49 +139,52 @@ function formatDate(iso) {
             />
           </template>
         </ChartCard>
-
-        <ChartCard title="Revenue by category" caption="Top 8, current filter - rest folded into Other">
-          <template #chart>
-            <BarChart
-              :labels="categories.map((c) => (c.category === 'Other' ? 'Other' : humanize(c.category)))"
-              :values="categories.map((c) => c.revenue)"
-              :colors="SEQUENTIAL_BLUE[500]"
-              value-prefix="$"
-            />
-          </template>
-          <template #table>
-            <DataTable
-              :columns="[
-                { key: 'category', label: 'Category' },
-                { key: 'revenue', label: 'Revenue', align: 'num' },
-              ]"
-              :rows="categories.map((c) => ({ category: c.category === 'Other' ? 'Other' : humanize(c.category), revenue: compactCurrency(c.revenue) }))"
-            />
-          </template>
-        </ChartCard>
-
-        <ChartCard title="Revenue by persona" caption="All personas, unaffected by the filter above">
-          <template #chart>
-            <BarChart
-              :labels="personaRevenue.map((p) => humanize(p.persona))"
-              :values="personaRevenue.map((p) => p.revenue)"
-              :colors="personaRevenue.map((p) => personaColor[p.persona])"
-              value-prefix="$"
-            />
-          </template>
-          <template #table>
-            <DataTable
-              :columns="[
-                { key: 'persona', label: 'Persona' },
-                { key: 'revenue', label: 'Revenue', align: 'num' },
-              ]"
-              :rows="personaRevenue.map((p) => ({ persona: humanize(p.persona), revenue: compactCurrency(p.revenue) }))"
-            />
-          </template>
-        </ChartCard>
       </div>
 
-      <ChartCard title="Revenue by location" caption="Circle size is revenue per city, current filter" class="metrics-map-card">
+      <!-- Show persona breakdown normally, but switch to category
+           breakdown once a single persona is picked - a persona chart
+           with only one persona in it isn't very useful. -->
+      <ChartCard v-if="personaFilter === 'all'" title="Revenue by persona" class="metrics-full-card">
+        <template #chart>
+          <BarChart
+            :labels="personaRevenue.map((p) => humanize(p.persona))"
+            :values="personaRevenue.map((p) => p.revenue)"
+            :colors="personaRevenue.map((p) => personaColor[p.persona])"
+            value-prefix="$"
+          />
+        </template>
+        <template #table>
+          <DataTable
+            :columns="[
+              { key: 'persona', label: 'Persona' },
+              { key: 'revenue', label: 'Revenue', align: 'num' },
+            ]"
+            :rows="personaRevenue.map((p) => ({ persona: humanize(p.persona), revenue: compactCurrency(p.revenue) }))"
+          />
+        </template>
+      </ChartCard>
+
+      <ChartCard v-else title="Revenue by category" caption="Top 8 - the rest are folded into Other" class="metrics-full-card">
+        <template #chart>
+          <BarChart
+            :labels="categories.map((c) => (c.category === 'Other' ? 'Other' : humanize(c.category)))"
+            :values="categories.map((c) => c.revenue)"
+            :colors="SEQUENTIAL_BLUE[500]"
+            value-prefix="$"
+          />
+        </template>
+        <template #table>
+          <DataTable
+            :columns="[
+              { key: 'category', label: 'Category' },
+              { key: 'revenue', label: 'Revenue', align: 'num' },
+            ]"
+            :rows="categories.map((c) => ({ category: c.category === 'Other' ? 'Other' : humanize(c.category), revenue: compactCurrency(c.revenue) }))"
+          />
+        </template>
+      </ChartCard>
+
+      <ChartCard title="Revenue by location" caption="Circle size = revenue" class="metrics-full-card">
         <template #chart>
           <LocationMap :rows="locations" />
         </template>
@@ -209,7 +205,7 @@ function formatDate(iso) {
         <h2>Unexpected purchases</h2>
         <p class="metrics-outliers__caption">
           A shopper's persona sets what they usually buy, not what they're allowed to - every persona has a small
-          chance of a line item completely outside its normal categories. Most recent, current filter.
+          chance of buying something completely different.
         </p>
         <DataTable
           v-if="outliers.length"

@@ -20,11 +20,10 @@ $(document).ready(function () {
     createdRow: function (row, data, dataIndex) {
       const cells = row.querySelectorAll('td');
 
-      // First cell is the Category column: render it as a tag, matching the
-      // site's pill-style topic labels.
+      // first cell is the Category column - style it as a tag
       cells[0].classList.add('category-tag');
 
-      // Skip index 0 (Category) and index 1 (Sector), evaluate numeric values from index 2 onwards
+      // columns 0 and 1 are text (Category, Sector), the rest are numbers
       for (let i = 2; i < cells.length; i++) {
         const val = parseFloat(cells[i].textContent.trim());
         if (!isNaN(val) && val >= 1.0) {

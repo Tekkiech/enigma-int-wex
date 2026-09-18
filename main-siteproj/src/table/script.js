@@ -21,12 +21,9 @@ function shareCell(share) {
 async function initTable() {
   const worldOsShare = await loadWorldOsShare();
 
-  // Every column gets its own uniquely-named field - DataTables'
-  // Responsive extension tracks columns by their `data` key, and two
-  // columns sharing one key (an earlier version of this reused a single
-  // breakdown entry for both its "OS" and "share" columns) made it mix
-  // up which value belonged to which column once it started
-  // collapsing/reordering them.
+  // every column needs its own field name here - DataTables tracks
+  // columns by this key, and sharing one between two columns confuses
+  // it once it starts collapsing/reordering them on small screens
   const rows = [...worldOsShare.features]
     .sort((a, b) => a.properties.name.localeCompare(b.properties.name))
     .map((f) => {

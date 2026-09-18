@@ -1,8 +1,8 @@
 /*
-  Shared across every page: the light/dark toggle and the GSAP
-  ScrollTrigger entrance/reveal animations. Each page's own script
-  calls bootPage() once, then listens for the 'themechange' event if it
-  needs to re-colour anything (a chart, for example) on toggle.
+  Stuff every page uses: the light/dark toggle and the scroll-in
+  animations. Each page calls bootPage() once on load, and can listen
+  for the 'themechange' event if it needs to recolor something (like a
+  chart) when the toggle is clicked.
 */
 const THEME_KEY = 'main-siteproj-theme';
 
@@ -28,25 +28,14 @@ function initTheme() {
   });
 }
 
-// Internal nav links are wired up here rather than written as real
-// hrefs in the HTML: Parcel treats an <a href="..."> pointing at
-// another page it's bundling as a build dependency and rewrites it to
-// a root-absolute path (e.g. "/trend/index.html") no matter how it was
-// written in source. That's correct only when the site is deployed at
-// a domain root; opened straight off disk, or hosted under a sub-path
-// (a project page, a preview deploy, a reverse proxy that mounts the
-// whole site under e.g. "/main"), a root-absolute link points outside
-// the site entirely and silently fails - which looks exactly like "the
-// links don't do anything".
-//
-// A static "how many levels to climb" guess (the previous approach)
-// has the same problem one level down: it has to assume a fixed
-// mount depth and a fixed trailing-slash shape, and a proxy that adds
-// its own prefix breaks that assumption without the page ever knowing.
-// Instead, each page carries its own name in <body data-page="...">,
-// and that name is a literal segment of this page's current URL no
-// matter how deep it's mounted. Finding that segment and cutting the
-// URL there recovers the true site root at runtime, prefix and all.
+// We build nav links in JS instead of just writing <a href="..."> in
+// the HTML, because Parcel rewrites those hrefs to start from "/" -
+// which breaks if the site isn't hosted right at the domain root (like
+// on a preview deploy or behind a proxy with its own path prefix).
+// Each page knows its own name (<body data-page="...">), and that name
+// always shows up somewhere in the current URL - so we find it there
+// and use everything before it as the real site root, whatever prefix
+// it's hosted under.
 const PAGES = {
   home: 'index.html',
   trend: 'trend/index.html',
@@ -62,8 +51,7 @@ function siteRoot() {
   const path = location.pathname;
 
   if (slash === -1) {
-    // Home has no directory segment of its own - wherever this page is
-    // being served from already IS the root.
+    // home page has no folder of its own, so it IS the root already
     if (path.endsWith('/index.html')) return path.slice(0, -'index.html'.length);
     return path.endsWith('/') ? path : `${path}/`;
   }
@@ -106,8 +94,7 @@ function initScrollAnimations() {
         y: 0,
         duration: 0.8,
         ease: 'power3.out',
-        // 'play none none none': animate in once and stay, rather than
-        // re-hiding content on every scroll back up past it.
+        // play once and stay visible, don't re-hide on scrolling back up
         scrollTrigger: { trigger: sec, start: 'top 88%', toggleActions: 'play none none none' },
       }
     );

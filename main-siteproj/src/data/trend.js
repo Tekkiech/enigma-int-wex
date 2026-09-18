@@ -1,15 +1,11 @@
 /*
-  Worldwide operating system market share, monthly, Sept 2023 - Aug 2026.
+  Worldwide OS market share, monthly, Sept 2023 - Aug 2026.
+  Source: StatCounter Global Stats (gs.statcounter.com/os-market-share),
+  snapshot from 2026-09-15.
 
-  Source: StatCounter Global Stats (gs.statcounter.com/os-market-share).
-  StatCounter doesn't publish a public API for GlobalStats; this is a
-  snapshot pulled from the same JSON endpoint their own site's chart uses
-  (chart.php, forceJson=true), fetched 2026-09-15. See README for the
-  exact request shape if this needs refreshing.
-
-  "OS X" and "macOS" are both StatCounter's own categories, not a
-  relabelling on our part - they track as separate series, with "macOS"
-  only appearing from Mar 2025 onward.
+  "OS X" and "macOS" are two separate categories in StatCounter's own
+  data, not something we split ourselves - "macOS" only starts showing
+  up from Mar 2025 onward.
 */
 
 export const months = [

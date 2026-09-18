@@ -1,14 +1,11 @@
-/*
-  Shared lazy fetch for the per-country dataset, used by the map, table
-  and trend (for its legend drill-down) pages. Memoized per page load so
-  navigating between features that both need it only fetches once.
-*/
+// fetches the per-country dataset once and reuses it - the map, table,
+// and trend page's legend drill-down all need this same data
 let worldOsSharePromise = null;
 
 export function loadWorldOsShare() {
   if (!worldOsSharePromise) {
-    // Parcel resolves a dynamic JSON import to the parsed data directly,
-    // not ESM-wrapped with a `default` key (unlike a static import).
+    // a dynamic import of a JSON file resolves straight to the data,
+    // no `.default` wrapper like a normal ESM import would have
     worldOsSharePromise = import('./world-os-share.json').then((mod) => mod.default ?? mod);
   }
   return worldOsSharePromise;

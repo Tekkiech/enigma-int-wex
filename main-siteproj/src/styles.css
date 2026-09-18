@@ -1,8 +1,6 @@
 /*
-  Design system ported from tekkiech.tech (github.com/Tekkiech/Tekkiech-Space):
-  same tokens, same terminal chrome-bar, same reveal-on-scroll feel. This
-  page isn't an Evidence Hub deliverable like tasks 1-3 - it's our own
-  synthesis piece - so it wears Isaac's own brand instead of the client's.
+  dark terminal theme - not the Evidence Hub look used in tasks 1-3,
+  this page is its own thing so it gets its own colors
 */
 :root {
   --bg: #0b0b0a;
@@ -20,10 +18,8 @@
   --radius-sm: 6px;
   --radius-pill: 20px;
 
-  /* One colour per OS, shared by the chart, map and table (see
-     data/os-colors.js) - an ANSI-terminal-ish palette chosen to read
-     clearly on the dark surface, distinct from --accent so a category
-     swatch is never mistaken for a link or a UI accent. */
+  /* one color per OS (data/os-colors.js reads these) - different from
+     --accent so a category swatch never looks like a link or button */
   --os-android: #7ec699;
   --os-windows: #6ca0dc;
   --os-ios: #c9a0dc;
@@ -711,10 +707,8 @@ table.dataTable > tbody > tr.child span.dtr-title {
     padding: 1rem;
   }
 
-  /* The legend wraps onto a second row below this width, and the chart
-     canvas fills whatever height this container gives it - without more
-     room here, Chart.js squeezes the now-taller legend and the plot
-     into the same fixed height, eating the spacing between them. */
+  /* legend wraps to 2 rows at this width, so the chart needs more
+     height or it and the legend get squeezed together */
   .chart-wrap {
     height: clamp(380px, 100vw, 460px);
   }

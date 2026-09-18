@@ -1,25 +1,13 @@
-"""Synthetic order-history generator for the metrics dashboard.
-
-DB-only, start to finish: reads the real product catalogue out of
-tekkiech.db and writes the generated shoppers/orders/order-lines straight
-back into it, in three tables of their own (synthetic_shopper,
-synthetic_order, synthetic_order_line) - deliberately separate from the
-live app's user/order/order_item tables (see server/models.py), so a
-synthetic shopper never mixes into the real account system. Nothing here
-produces or reads a JSON file; the Flask API (GET /api/metrics/orders)
-queries these tables directly for the dashboard.
-
-Every synthetic shopper gets a real name (names.py), a persona
-(personas.py) and a home city (locations.py). Persona.choose_category is
-where the generating actually happens: it either draws from that
-persona's category weights, or - with a small independent chance - from
-every category uniformly, regardless of persona. That's the whole
-mechanism behind a tech buyer occasionally buying a kiwi or a plant pot;
-no special-cased "quirky" logic, just noise layered on top of signal.
-
-Usage:
-    python3 generate.py [--seed N] [--users N] [--months N] [--db PATH]
-"""
+# Makes up a bunch of fake orders for the /metrics dashboard to show.
+#
+# It reads the real products out of tekkiech.db, then writes fake
+# shoppers and orders back into that same file, in their own tables
+# (synthetic_shopper, synthetic_order, synthetic_order_line) so they
+# never mix with real accounts. No JSON files involved - the Flask API
+# (GET /api/metrics/orders) reads straight from these tables.
+#
+# Run it with:
+#   python3 generate.py [--seed N] [--users N] [--months N] [--db PATH]
 
 import argparse
 import os
@@ -36,7 +24,7 @@ DB_PATH = Path(os.environ.get("DB_PATH", str(Path(__file__).resolve().parent.par
 
 
 class Product:
-    def __init__(self, product_id: int, title: str, price: float, category: str):
+    def __init__(self, product_id, title, price, category):
         self.id = product_id
         self.title = title
         self.price = price
@@ -44,142 +32,117 @@ class Product:
 
 
 class Catalogue:
-    """The real product catalogue, grouped by category - loaded once from
-    tekkiech.db. Only ever reads from it; the write side of this script
-    lives entirely in SyntheticStore."""
+    # Holds every product, grouped by category. Only ever reads from the
+    # database - writing happens over in SyntheticStore.
 
-    def __init__(self, products_by_category: dict):
-        self._products_by_category = products_by_category
+    def __init__(self, products_by_category):
+        self.products_by_category = products_by_category
 
     @classmethod
-    def from_db(cls, db_path: Path) -> "Catalogue":
+    def from_db(cls, db_path):
         connection = sqlite3.connect(db_path)
-        try:
-            cursor = connection.execute(
-                """
-                SELECT p.id, p.title, p.price, c.slug
-                FROM product p JOIN category c ON p.category_id = c.id
-                WHERE p.is_active = 1
-                """
-            )
-            products_by_category = {}
-            for product_id, title, price, slug in cursor.fetchall():
-                products_by_category.setdefault(slug, []).append(Product(product_id, title, price, slug))
-        finally:
-            connection.close()
+        rows = connection.execute(
+            """
+            SELECT p.id, p.title, p.price, c.slug
+            FROM product p JOIN category c ON p.category_id = c.id
+            WHERE p.is_active = 1
+            """
+        ).fetchall()
+        connection.close()
+
+        products_by_category = {}
+        for product_id, title, price, category in rows:
+            product = Product(product_id, title, price, category)
+            products_by_category.setdefault(category, []).append(product)
         return cls(products_by_category)
 
     @property
-    def categories(self) -> list:
-        return list(self._products_by_category.keys())
+    def categories(self):
+        return list(self.products_by_category.keys())
 
-    def products_in(self, category: str) -> list:
-        return self._products_by_category[category]
-
-    def random_product(self, category: str, rng: random.Random) -> Product:
-        return rng.choice(self._products_by_category[category])
+    def random_product(self, category, rng):
+        return rng.choice(self.products_by_category[category])
 
 
 class OrderLine:
-    def __init__(self, product: Product, quantity: int, is_outlier: bool):
+    def __init__(self, product, quantity, is_outlier):
         self.product = product
         self.quantity = quantity
         self.is_outlier = is_outlier
 
     @property
-    def line_total(self) -> float:
+    def line_total(self):
         return round(self.product.price * self.quantity, 2)
 
 
 class Order:
-    def __init__(self, order_id: str, shopper_id: int, order_date: date):
+    def __init__(self, order_id, shopper_id, order_date):
         self.id = order_id
         self.shopper_id = shopper_id
         self.order_date = order_date
         self.lines = []
 
-    def add_line(self, line: OrderLine) -> None:
+    def add_line(self, line):
         self.lines.append(line)
-
-    @property
-    def total(self) -> float:
-        return round(sum(line.line_total for line in self.lines), 2)
 
 
 class SeasonalCalendar:
-    """Relative order volume by calendar month - a holiday-season bump
-    (Nov/Dec) and a mild post-holiday dip (Jan/Feb), flat-ish otherwise.
-    This is what gives the eventual line chart actual shape instead of
-    flat noise."""
-
+    # Some months get more orders than others - busier around the
+    # holidays (Nov/Dec), quieter right after (Jan/Feb).
     MONTH_WEIGHTS = {
         1: 0.8, 2: 0.8, 3: 0.9, 4: 0.95, 5: 1.0, 6: 1.0,
         7: 0.95, 8: 1.0, 9: 1.05, 10: 1.1, 11: 1.6, 12: 1.8,
     }  # fmt: skip
 
-    def __init__(self, start: date, end: date):
+    def __init__(self, start, end):
         self.start = start
         self.end = end
-        self._span_days = (end - start).days
-        self._peak_weight = max(self.MONTH_WEIGHTS.values())
+        self.days_in_range = (end - start).days
+        self.busiest_month_weight = max(self.MONTH_WEIGHTS.values())
 
-    def random_date(self, rng: random.Random) -> date:
-        for _ in range(20):  # rejection-sample against the month weights
-            candidate = self.start + timedelta(days=rng.randint(0, self._span_days))
-            if rng.random() < self.MONTH_WEIGHTS[candidate.month] / self._peak_weight:
-                return candidate
-        return self.start + timedelta(days=rng.randint(0, self._span_days))
+    def random_date(self, rng):
+        # Pick a random day, then re-roll it sometimes based on how busy
+        # that month is, so busier months end up with more orders.
+        for _ in range(20):
+            day = self.start + timedelta(days=rng.randint(0, self.days_in_range))
+            chance = self.MONTH_WEIGHTS[day.month] / self.busiest_month_weight
+            if rng.random() < chance:
+                return day
+        return self.start + timedelta(days=rng.randint(0, self.days_in_range))
 
 
 class Shopper:
-    """One synthetic user: a real name, a persona, and a home location.
-    place_orders is where a shopper actually goes shopping - it owns
-    deciding how many orders to place and what goes in each one, using
-    its own persona to steer (and occasionally ignore) what it buys."""
-
-    def __init__(self, shopper_id: int, name: str, persona, location):
+    def __init__(self, shopper_id, name, persona, location):
         self.id = shopper_id
         self.name = name
         self.persona = persona
         self.location = location
         self.orders = []
 
-    def order_count(self, months: int, rng: random.Random) -> int:
-        mean = self.persona.avg_orders_per_year * (months / 12)
-        return max(1, OrderGenerator.poisson_sample(mean, rng))
+    def how_many_orders(self, months, rng):
+        average = self.persona.avg_orders_per_year * (months / 12)
+        return max(1, OrderGenerator.random_poisson(average, rng))
 
-    def place_orders(
-        self,
-        catalogue: Catalogue,
-        calendar: SeasonalCalendar,
-        rng: random.Random,
-        months: int,
-        outlier_probability: float,
-        items_per_order_weights: dict,
-        quantity_weights: dict,
-        next_order_seq: int,
-    ) -> int:
-        for _ in range(self.order_count(months, rng)):
-            order = Order(f"so-{next_order_seq}", self.id, calendar.random_date(rng))
-            next_order_seq += 1
+    def place_orders(self, catalogue, calendar, rng, months, rules, next_order_id):
+        for _ in range(self.how_many_orders(months, rng)):
+            order = Order(f"so-{next_order_id}", self.id, calendar.random_date(rng))
+            next_order_id += 1
 
-            num_items = OrderGenerator.weighted_choice(rng, items_per_order_weights)
-            for _ in range(num_items):
-                category, is_outlier = self.persona.choose_category(rng, catalogue.categories, outlier_probability)
+            item_count = OrderGenerator.pick_weighted(rng, rules.items_per_order)
+            for _ in range(item_count):
+                category, is_outlier = self.persona.choose_category(rng, catalogue.categories, rules.outlier_chance)
                 product = catalogue.random_product(category, rng)
-                quantity = OrderGenerator.weighted_choice(rng, quantity_weights)
+                quantity = OrderGenerator.pick_weighted(rng, rules.quantities)
                 order.add_line(OrderLine(product, quantity, is_outlier))
 
             self.orders.append(order)
-        return next_order_seq
+        return next_order_id
 
 
 class SyntheticStore:
-    """Owns the three synthetic_* tables inside tekkiech.db - kept
-    separate from the live app's user/order/order_item tables on purpose,
-    so a synthetic shopper never mixes into the real account system.
-    Re-running the generator clears and replaces everything here rather
-    than appending forever."""
+    # Creates and fills the synthetic_* tables in tekkiech.db. Kept apart
+    # from the real user/order/order_item tables so fake shoppers never
+    # end up mixed in with real accounts.
 
     SCHEMA = """
         CREATE TABLE IF NOT EXISTS synthetic_shopper (
@@ -204,22 +167,21 @@ class SyntheticStore:
             is_outlier INTEGER NOT NULL
         );
     """
-    # product_id deliberately has no FOREIGN KEY clause - it points at
-    # product(id) from the live app's own Alembic-managed schema, which
-    # this script doesn't own and shouldn't couple itself to.
+    # product_id isn't a real FOREIGN KEY here - it points at the app's
+    # own product table, which this script doesn't own.
 
-    def __init__(self, db_path: Path):
+    def __init__(self, db_path):
         self.connection = sqlite3.connect(db_path)
 
-    def ensure_schema(self) -> None:
+    def ensure_schema(self):
         self.connection.executescript(self.SCHEMA)
 
-    def clear(self) -> None:
+    def clear(self):
         self.connection.executescript(
             "DELETE FROM synthetic_order_line; DELETE FROM synthetic_order; DELETE FROM synthetic_shopper;"
         )
 
-    def save_shopper(self, shopper: Shopper) -> None:
+    def save_shopper(self, shopper):
         self.connection.execute(
             "INSERT INTO synthetic_shopper (id, name, persona, city, region, lat, lng) VALUES (?, ?, ?, ?, ?, ?, ?)",
             (
@@ -235,7 +197,7 @@ class SyntheticStore:
         for order in shopper.orders:
             self.save_order(order)
 
-    def save_order(self, order: Order) -> None:
+    def save_order(self, order):
         self.connection.execute(
             "INSERT INTO synthetic_order (id, shopper_id, order_date) VALUES (?, ?, ?)",
             (order.id, order.shopper_id, order.order_date.isoformat()),
@@ -245,69 +207,63 @@ class SyntheticStore:
             [(order.id, line.product.id, line.quantity, int(line.is_outlier)) for line in order.lines],
         )
 
-    def commit(self) -> None:
+    def commit(self):
         self.connection.commit()
 
-    def close(self) -> None:
+    def close(self):
         self.connection.close()
 
 
+class GenerationRules:
+    # Just a small bundle of settings, so we're not passing five separate
+    # arguments around everywhere.
+    def __init__(self):
+        self.outlier_chance = 0.08  # chance a line item ignores the persona and buys something random
+        self.items_per_order = {1: 5, 2: 4, 3: 2, 4: 1}  # most orders only have 1-2 items
+        self.quantities = {1: 6, 2: 2, 3: 1}
+
+
 class OrderGenerator:
-    """Orchestrates the whole synthetic dataset: builds each shopper (a
-    real name, a persona, a home city) and has it place its own orders."""
-
-    OUTLIER_PROBABILITY = 0.08  # chance any single line item ignores the persona's weights
-    ITEMS_PER_ORDER_WEIGHTS = {1: 5, 2: 4, 3: 2, 4: 1}  # most orders are small
-    QUANTITY_WEIGHTS = {1: 6, 2: 2, 3: 1}
-
-    def __init__(self, catalogue: Catalogue, personas: list, locations: list, seed: int = 42):
+    def __init__(self, catalogue, personas, locations, seed=42):
         self.catalogue = catalogue
         self.personas = personas
         self.locations = locations
         self.name_generator = NameGenerator()
+        self.rules = GenerationRules()
         self.rng = random.Random(seed)
 
     @staticmethod
-    def poisson_sample(mean: float, rng: random.Random) -> int:
-        """Knuth's algorithm - stdlib-only Poisson sampling, no numpy
-        dependency needed for what's a small, one-off generation script."""
-        if mean <= 0:
+    def random_poisson(average, rng):
+        # Knuth's method for picking a random count around an average,
+        # e.g. "usually 14 orders a year, but sometimes 11, sometimes 17".
+        if average <= 0:
             return 0
-        l = 2.718281828459045 ** -mean
-        k, p = 0, 1.0
+        limit = 2.718281828459045**-average
+        count, product = 0, 1.0
         while True:
-            k += 1
-            p *= rng.random()
-            if p <= l:
-                return k - 1
+            count += 1
+            product *= rng.random()
+            if product <= limit:
+                return count - 1
 
     @staticmethod
-    def weighted_choice(rng: random.Random, weight_map: dict):
-        return rng.choices(list(weight_map.keys()), weights=list(weight_map.values()), k=1)[0]
+    def pick_weighted(rng, weights):
+        return rng.choices(list(weights.keys()), weights=list(weights.values()))[0]
 
-    def generate(self, num_users: int, months: int) -> list:
+    def generate(self, num_shoppers, months):
         end = date.today()
         calendar = SeasonalCalendar(end - timedelta(days=months * 30), end)
 
         shoppers = []
-        next_order_seq = 1
-        for shopper_id in range(1, num_users + 1):
+        next_order_id = 1
+        for shopper_id in range(1, num_shoppers + 1):
             shopper = Shopper(
                 shopper_id,
                 self.name_generator.generate(self.rng),
                 self.rng.choice(self.personas),
                 self.rng.choice(self.locations),
             )
-            next_order_seq = shopper.place_orders(
-                self.catalogue,
-                calendar,
-                self.rng,
-                months,
-                self.OUTLIER_PROBABILITY,
-                self.ITEMS_PER_ORDER_WEIGHTS,
-                self.QUANTITY_WEIGHTS,
-                next_order_seq,
-            )
+            next_order_id = shopper.place_orders(self.catalogue, calendar, self.rng, months, self.rules, next_order_id)
             shoppers.append(shopper)
         return shoppers
 

@@ -1,6 +1,6 @@
 <script setup>
 defineProps({
-  // Array of { label, to? } — the last item is rendered as plain text (current page)
+  // list of { label, to? } - last one has no "to", so it just shows as plain text
   items: { type: Array, required: true },
 });
 </script>

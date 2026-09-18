@@ -1,13 +1,5 @@
-"""Password hashing, signup strength rules, login lockout, and the
-session-based login guard - signup and login deliberately enforce
-different things. Signup owns password quality (nothing to check that
-against yet); login owns brute-force resistance (a password to check
-attempts against).
-
-No pepper here on purpose - see the README for why. bcrypt's own salt is
-enough for this project, and a pepper only earns its complexity when the
-database and the app server are separate trust boundaries.
-"""
+# Password hashing, password rules for signup, login lockout, and the
+# @login_required decorator.
 
 import re
 from datetime import datetime, timedelta, timezone
@@ -21,33 +13,32 @@ LOCKOUT_THRESHOLD = 5  # failed attempts before a lockout kicks in
 LOCKOUT_MINUTES = 15
 
 
-def hash_password(plain: str) -> str:
+def hash_password(plain):
     return bcrypt.hashpw(plain.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
-def verify_password(plain: str, password_hash: str) -> bool:
+def verify_password(plain, password_hash):
     return bcrypt.checkpw(plain.encode("utf-8"), password_hash.encode("utf-8"))
 
 
-# A fixed hash to check a login attempt against when the email doesn't
-# match any user, so that path still does real bcrypt work instead of
-# returning early - the timing difference between "no such email" and
-# "wrong password" is a real user-enumeration side channel otherwise.
-# Computed once, not per request; there's nothing to decrypt back out of
-# it, it exists purely to give bcrypt.checkpw something to chew on.
+# A fake hash to check against when someone logs in with an email that
+# doesn't exist. Without this, a login for a real email would take
+# slightly longer than one for a fake email (because checking a real
+# password hash takes time), and that tiny difference could let someone
+# guess which emails have accounts. This keeps the timing the same either
+# way.
 _DUMMY_PASSWORD_HASH = hash_password("not-a-real-password")
 
 
-def verify_login(plain: str, user) -> bool:
-    """verify_password against the real user, or against the dummy hash
-    if user is None - same bcrypt cost either way."""
-    return verify_password(plain, user.password_hash if user else _DUMMY_PASSWORD_HASH)
+def verify_login(plain, user):
+    if user:
+        return verify_password(plain, user.password_hash)
+    return verify_password(plain, _DUMMY_PASSWORD_HASH)
 
 
-def password_requirement_errors(password: str) -> list[str]:
-    """What's wrong with a candidate signup password, if anything - a
-    login attempt never calls this, a wrong-but-otherwise-valid-shaped
-    password there is a lockout-counter problem, not a quality one."""
+def password_requirement_errors(password):
+    # Returns a list of what's wrong with the password, or an empty list
+    # if it's fine. Only used for signup - login just checks it's correct.
     errors = []
     if len(password) < MIN_PASSWORD_LENGTH:
         errors.append(f"at least {MIN_PASSWORD_LENGTH} characters")
@@ -58,19 +49,19 @@ def password_requirement_errors(password: str) -> list[str]:
     return errors
 
 
-def register_failed_login(user) -> None:
+def register_failed_login(user):
     user.failed_login_attempts += 1
     if user.failed_login_attempts >= LOCKOUT_THRESHOLD:
         user.locked_until = datetime.now(timezone.utc) + timedelta(minutes=LOCKOUT_MINUTES)
 
 
-def register_successful_login(user) -> None:
+def register_successful_login(user):
     user.failed_login_attempts = 0
     user.locked_until = None
 
 
-def lockout_seconds_remaining(user) -> int:
-    """0 if not locked; otherwise how much longer the lockout has to run."""
+def lockout_seconds_remaining(user):
+    # 0 means not locked. Otherwise, how many seconds until they can try again.
     if not user.locked_until:
         return 0
     locked_until = user.locked_until

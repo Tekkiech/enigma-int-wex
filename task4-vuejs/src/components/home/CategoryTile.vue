@@ -14,7 +14,7 @@ onMounted(() => {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   if (reducedMotion || props.category.images.length < 2) return;
 
-  // A small random stagger so 24 tiles don't all crossfade in lockstep.
+  // random delay so all the tiles don't fade at the exact same time
   const interval = 4000 + Math.random() * 1500;
   timer = setInterval(() => {
     activeIndex.value = (activeIndex.value + 1) % props.category.images.length;

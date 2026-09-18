@@ -1,16 +1,12 @@
-"""Shopper locations for synthetic order generation - see generate.py.
-
-A fixed set of real US cities with coordinates, so the map view has real
-lat/lng to place markers at rather than invented ones. Assigned per
-shopper, not per order: a synthetic shopper has one home location for the
-life of the dataset, the same way a real customer does.
-"""
+# A shopper's home city, so the map view has somewhere real to put a pin.
+# Each shopper gets one of these picked at random, and keeps it for every
+# order they place.
 
 
 class Location:
-    def __init__(self, city: str, region: str, lat: float, lng: float):
+    def __init__(self, city, region, lat, lng):
         self.city = city
-        self.region = region  # US state abbreviation
+        self.region = region  # state abbreviation, like "NY"
         self.lat = lat
         self.lng = lng
 

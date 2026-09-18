@@ -1,8 +1,7 @@
 /*
-  Tekkiech.Market — styled to match a supplied grocery-store mockup:
-  near-white background, black chrome, a single burnt-orange accent, Work
-  Sans for body/headings, IBM Plex Mono for labels/numbers/controls.
-  Colors are oklch() so they're copied verbatim from that mockup.
+  main styles for Tekkiech.Market - off-white background, black text,
+  one orange accent color. Work Sans for text, IBM Plex Mono for labels
+  and numbers.
 */
 :root {
   --bg: oklch(0.99 0 0);
@@ -1492,17 +1491,6 @@ input {
 }
 
 /* Metrics dashboard */
-.metrics-view__intro {
-  color: var(--text-dim);
-  font-size: 14px;
-  max-width: 640px;
-}
-
-.metrics-view__intro code {
-  font-family: var(--font-mono);
-  font-size: 13px;
-}
-
 .metrics-filter {
   margin: 20px 0 24px;
 }
@@ -1664,12 +1652,15 @@ input {
   font-size: 13px;
 }
 
-.metrics-map-card {
+.metrics-full-card {
   margin-bottom: 40px;
 }
 
 .location-map {
+  /* needs both position AND z-index here, or Leaflet's own internal
+     z-index (up to 1000) leaks out and draws over the site header */
   position: relative;
+  z-index: 0;
 }
 
 .location-map__canvas {
@@ -1677,8 +1668,7 @@ input {
   border-radius: 4px;
 }
 
-/* Mute the OSM basemap so the revenue markers stay the highest-contrast
-   thing on screen - same approach as task3-leafletjs. */
+/* tone down the map tiles so the revenue markers stand out more */
 .location-map__canvas .leaflet-tile-pane {
   filter: grayscale(55%) brightness(1.05) contrast(0.95);
 }

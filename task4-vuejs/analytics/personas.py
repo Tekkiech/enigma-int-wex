@@ -1,47 +1,26 @@
-"""Shopper archetypes for synthetic order generation - see generate.py."""
+# A persona is a type of shopper, like "tech-enthusiast" or "home-cook".
+# Each one has a set of categories it likes to buy from, and roughly how
+# many orders it places a year.
 
 
 class Persona:
-    """A shopper archetype: which categories it buys from and how often.
-
-    weights is a category-slug -> relative weight attribute (not required
-    to sum to anything in particular - choose_category normalizes it via
-    random.choices). A category left out gets weight 0 for this persona's
-    "normal" purchases - it only shows up via choose_category's outlier
-    roll, which samples uniformly across every category in the catalogue
-    regardless of persona. That's the whole mechanism behind a tech buyer
-    occasionally buying a kiwi or a plant pot: no special-cased "quirky"
-    logic, just a small per-item chance of ignoring this weight map
-    entirely.
-
-    avg_orders_per_year is a Poisson mean, not a hard cap.
-    """
-
-    def __init__(self, name: str, avg_orders_per_year: int, weights: dict):
+    def __init__(self, name, avg_orders_per_year, weights):
         self.name = name
         self.avg_orders_per_year = avg_orders_per_year
-        self.weights = weights
+        self.weights = weights  # category -> how much this persona likes it
 
-    def weights_in(self, categories: list) -> dict:
-        """This persona's weights, restricted to categories that actually
-        exist in a given catalogue - a persona shouldn't be asked to draw
-        from a category the catalogue doesn't have."""
-        return {slug: weight for slug, weight in self.weights.items() if slug in categories}
-
-    def choose_category(self, rng, categories: list, outlier_probability: float) -> tuple:
-        """The generating step itself: with outlier_probability chance,
-        ignore this persona's weights and pick uniformly across every
-        catalogue category; otherwise pick weighted by self.weights.
-        Returns (category_slug, was_outlier)."""
-        if rng.random() < outlier_probability:
+    def choose_category(self, rng, categories, outlier_chance):
+        # Most of the time, buy from a category this persona likes.
+        # Sometimes (outlier_chance), buy something totally random instead -
+        # that's what makes a tech-enthusiast buy a banana once in a while.
+        if rng.random() < outlier_chance:
             return rng.choice(categories), True
 
-        weights = self.weights_in(categories)
-        if not weights:
+        my_weights = {c: w for c, w in self.weights.items() if c in categories}
+        if not my_weights:
             return rng.choice(categories), True
 
-        slugs = list(weights.keys())
-        picked = rng.choices(slugs, weights=list(weights.values()), k=1)[0]
+        picked = rng.choices(list(my_weights.keys()), weights=list(my_weights.values()))[0]
         return picked, False
 
 

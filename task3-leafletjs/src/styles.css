@@ -1,11 +1,7 @@
 /*
-  Palette and font sampled from the live North East Evidence Hub
-  (evidencehub.northeast-ca.gov.uk): near-black chrome, a white/light-grey
-  body, Hanken Grotesk throughout, and a set of theme accent colours used
-  on the "Evidence by Theme" cards. Heat networks sit under the site's
-  "Net zero" theme, whose accent is the pink below; the teal, blue and
-  pink also double up as the operational / feasibility / planned status
-  colours used on the map markers.
+  colors and font copied from the North East Evidence Hub site - black
+  header, light gray background, Hanken Grotesk. Pink is their "Net
+  zero" theme color; it also doubles as one of the marker colors below.
 */
 :root {
   --neh-black: #231f20;
@@ -158,7 +154,7 @@ body {
   font-family: var(--font-body);
 }
 
-/* Mute the default OSM basemap so the brand-coloured markers stay dominant */
+/* tone down the map tiles so the colored markers stand out more */
 #map .leaflet-tile-pane {
   filter: grayscale(45%) brightness(1.08) contrast(0.92);
 }

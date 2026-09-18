@@ -1,8 +1,5 @@
 <script setup>
-// The table-view twin every chart in this dashboard ships with - the same
-// values a chart's bars or line points show, reachable without hovering
-// anything. Columns/rows are plain data, never HTML: Vue's text
-// interpolation below already escapes them, same effect as textContent.
+// A plain table - used as the "view table" option next to each chart.
 defineProps({
   columns: { type: Array, required: true }, // [{ key, label, align? }]
   rows: { type: Array, required: true },
