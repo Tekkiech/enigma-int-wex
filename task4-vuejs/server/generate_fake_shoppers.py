@@ -60,27 +60,16 @@ class GenerationRules:
         self.quantities = {1: 6, 2: 2, 3: 1}
 
 
-def random_poisson(average, rng):
-    # Knuth's method for picking a random count around an average, e.g.
-    # "usually 14 orders a year, but sometimes 11, sometimes 17".
-    if average <= 0:
-        return 0
-    limit = 2.718281828459045**-average
-    count, product = 0, 1.0
-    while True:
-        count += 1
-        product *= rng.random()
-        if product <= limit:
-            return count - 1
-
-
 def pick_weighted(rng, weights):
     return rng.choices(list(weights.keys()), weights=list(weights.values()))[0]
 
 
 def how_many_orders(persona, months, rng):
+    # Roughly persona.avg_orders_per_year, scaled to however many months
+    # we're generating, then jittered up or down a bit so every shopper
+    # isn't placing the exact same number of orders.
     average = persona.avg_orders_per_year * (months / 12)
-    return max(1, random_poisson(average, rng))
+    return max(1, round(average * rng.uniform(0.7, 1.3)))
 
 
 def build_shopper(shopper_id, name_generator, rng, months, products_by_category, calendar, rules, next_order_id):
