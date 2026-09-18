@@ -49,10 +49,6 @@ async function submitLogIn() {
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
-
-function humanize(slug) {
-  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
-}
 </script>
 
 <template>
@@ -69,7 +65,7 @@ function humanize(slug) {
           Signed in. This is a real account, bcrypt-hashed password and all, just a small one behind a demo storefront.
         </p>
 
-        <dl class="account-card__stats">
+        <dl v-if="!account.user.isAdmin" class="account-card__stats">
           <div>
             <dt>Cart</dt>
             <dd>{{ catalog.cartCount }} items</dd>
@@ -78,23 +74,7 @@ function humanize(slug) {
             <dt>Saved</dt>
             <dd>{{ catalog.savedProducts.length }} items</dd>
           </div>
-          <template v-if="account.user.isAdmin">
-            <div v-if="account.user.persona">
-              <dt>Shopper type</dt>
-              <dd>{{ humanize(account.user.persona) }}</dd>
-            </div>
-            <div v-if="account.user.city">
-              <dt>Home city</dt>
-              <dd>{{ account.user.city }}, {{ account.user.region }}</dd>
-            </div>
-          </template>
         </dl>
-
-        <p v-if="account.user.isAdmin && account.user.persona" class="account-card__since">
-          A random guess at signup, then updated after every order to match what you actually buy most.
-          It's what groups your orders on the <router-link to="/metrics">shopper metrics</router-link>
-          dashboard - pick "Just me" there to see only your own orders.
-        </p>
 
         <button type="button" class="button button--outline" @click="account.signOut">Sign out</button>
       </div>
