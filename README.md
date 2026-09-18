@@ -65,19 +65,13 @@ npm run build # production build
 
 A [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) storefront called "Tekkiech.Market". Products, accounts, cart, and orders are all real, served by a [Flask](https://flask.palletsprojects.com/) API (`server/`) backed by SQLite, seeded once from [DummyJSON](https://dummyjson.com/). There's also a `/metrics` page with a Chart.js + Leaflet dashboard built from fake shopper data (`analytics/`).
 
-This one needs three things running at once: the API, the frontend, and (optionally) the fake data generator.
+This one needs the API and the frontend running at once.
 
 ```bash
 cd task4-vuejs/server
 python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt
-python seed.py    # sets up the database and pulls in products from DummyJSON
-python app.py     # runs on http://localhost:5000
-```
-
-```bash
-cd task4-vuejs/analytics
-python3 generate.py    # optional - fills /metrics with fake shoppers
+python run.py     # sets up the database, adds fake /metrics data, then runs on http://localhost:5000
 ```
 
 ```bash
