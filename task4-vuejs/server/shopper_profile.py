@@ -1,21 +1,57 @@
-# Every new account gets a random persona and home city, just so their
-# real orders can show up on the /metrics dashboard next to the fake
-# shoppers - it has nothing to do with what they actually buy. Same
-# persona names and cities as analytics/generate.py uses, kept as a
-# separate copy here since this file doesn't need everything that one
-# does (the category weights, the outlier logic, etc).
+# Every new account gets a random persona and home city, so their real
+# orders can show up on the /metrics dashboard next to the fake
+# shoppers. The persona doesn't limit what a real account can actually
+# buy - but /api/metrics/orders checks a purchase's category against
+# PERSONA_CATEGORIES to flag it as an "unexpected purchase" when it's
+# outside what that persona normally buys, the same way the fake
+# shoppers work. Same persona names, categories, and cities as
+# analytics/generate.py uses, kept as a separate (simpler) copy here
+# since this file doesn't need the category weights, just which
+# categories count as "normal" for each persona.
 
 import random
 
-PERSONAS = [
-    "tech-enthusiast",
-    "home-cook",
-    "family-shopper",
-    "fashion-forward",
-    "fitness-outdoors",
-    "beauty-selfcare",
-    "budget-generalist",
-]
+PERSONA_CATEGORIES = {
+    "tech-enthusiast": {"laptops", "smartphones", "tablets", "mobile-accessories", "mens-watches", "sunglasses"},
+    "home-cook": {"groceries", "kitchen-accessories", "home-decoration", "furniture"},
+    "family-shopper": {
+        "groceries",
+        "kitchen-accessories",
+        "home-decoration",
+        "furniture",
+        "sports-accessories",
+        "tops",
+    },
+    "fashion-forward": {
+        "womens-dresses",
+        "womens-shoes",
+        "womens-bags",
+        "womens-jewellery",
+        "womens-watches",
+        "mens-shirts",
+        "mens-shoes",
+        "tops",
+        "sunglasses",
+        "fragrances",
+    },
+    "fitness-outdoors": {"sports-accessories", "motorcycle", "vehicle", "mens-shoes", "womens-shoes", "groceries"},
+    "beauty-selfcare": {"beauty", "skin-care", "fragrances", "womens-jewellery", "sunglasses"},
+    "budget-generalist": {
+        "groceries",
+        "kitchen-accessories",
+        "mens-shirts",
+        "tops",
+        "home-decoration",
+        "mobile-accessories",
+        "sports-accessories",
+    },
+}
+
+PERSONAS = list(PERSONA_CATEGORIES.keys())
+
+
+def is_outlier_purchase(persona, category):
+    return category not in PERSONA_CATEGORIES.get(persona, set())
 
 LOCATIONS = [
     ("New York", "NY", 40.7128, -74.0060),

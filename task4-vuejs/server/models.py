@@ -101,9 +101,10 @@ class User(Base):
     failed_login_attempts: Mapped[int] = mapped_column(nullable=False, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(default=None)
 
-    # Random, picked once at signup (see shopper_profile.py) - just so this
-    # account's real orders can show up on the /metrics dashboard next to
-    # the fake shoppers. Not shown anywhere else on the site.
+    # Random, picked once at signup (see shopper_profile.py). Groups this
+    # account's real orders on the /metrics dashboard next to the fake
+    # shoppers, and a purchase outside the persona's usual categories
+    # gets flagged there as an "unexpected purchase" too.
     persona: Mapped[str | None] = mapped_column(default=None)
     city: Mapped[str | None] = mapped_column(default=None)
     region: Mapped[str | None] = mapped_column(default=None)

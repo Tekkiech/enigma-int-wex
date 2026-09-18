@@ -21,7 +21,7 @@ from auth import (
 )
 from database import SessionLocal, engine
 from models import Base, CartItem, Category, Order, OrderItem, Product, ProductReview, User, WishlistItem
-from shopper_profile import random_profile
+from shopper_profile import is_outlier_purchase, random_profile
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
@@ -460,7 +460,9 @@ def metrics_orders():
                 """
             )
         ).mappings().all()
-        records += [metrics_row(row, is_outlier=False) for row in real_rows]
+        records += [
+            metrics_row(row, is_outlier=is_outlier_purchase(row["persona"], row["category"])) for row in real_rows
+        ]
 
         # The synthetic_* tables only exist once analytics/generate.py has
         # been run - skip them instead of erroring out if it hasn't.
