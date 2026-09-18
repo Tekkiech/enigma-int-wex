@@ -1,104 +1,164 @@
+# A persona is a type of shopper, like "tech-enthusiast" or "home-cook".
+# Used two ways: generate_fake_shoppers.py picks a persona for each fake
+# shopper and uses its weights to decide what they buy, and every real
+# account gets checked against these same personas too - see
+# is_outlier_purchase and predict_persona below.
+#
 # Every new account gets a random home city at signup, but no persona
 # yet - persona starts out None ("not assigned") until they place their
-# first order, then predict_persona() below picks one based on what
-# they actually bought. The persona doesn't limit what a real account
-# can buy - but /api/metrics/orders checks a purchase's category
-# against PERSONA_CATEGORIES to flag it as an "unexpected purchase"
-# when it's outside what that persona normally buys, the same way the
-# fake shoppers work. Same persona names, categories, and cities as
-# analytics/generate.py uses, kept as a separate (simpler) copy here
-# since this file doesn't need the category weights, just which
-# categories count as "normal" for each persona.
+# first order, then predict_persona() picks one based on what they
+# actually bought.
 
 import random
 
-PERSONA_CATEGORIES = {
-    "tech-enthusiast": {"laptops", "smartphones", "tablets", "mobile-accessories", "mens-watches", "sunglasses"},
-    "home-cook": {"groceries", "kitchen-accessories", "home-decoration", "furniture"},
-    "family-shopper": {
-        "groceries",
-        "kitchen-accessories",
-        "home-decoration",
-        "furniture",
-        "sports-accessories",
-        "tops",
-    },
-    "fashion-forward": {
-        "womens-dresses",
-        "womens-shoes",
-        "womens-bags",
-        "womens-jewellery",
-        "womens-watches",
-        "mens-shirts",
-        "mens-shoes",
-        "tops",
-        "sunglasses",
-        "fragrances",
-    },
-    "fitness-outdoors": {"sports-accessories", "motorcycle", "vehicle", "mens-shoes", "womens-shoes", "groceries"},
-    "beauty-selfcare": {"beauty", "skin-care", "fragrances", "womens-jewellery", "sunglasses"},
-    "budget-generalist": {
-        "groceries",
-        "kitchen-accessories",
-        "mens-shirts",
-        "tops",
-        "home-decoration",
-        "mobile-accessories",
-        "sports-accessories",
-    },
-}
-
-PERSONAS = list(PERSONA_CATEGORIES.keys())
+from locations import LOCATIONS
 
 
-def is_outlier_purchase(persona, category):
-    return category not in PERSONA_CATEGORIES.get(persona, set())
+class Persona:
+    def __init__(self, name, avg_orders_per_year, weights):
+        self.name = name
+        self.avg_orders_per_year = avg_orders_per_year
+        self.weights = weights  # category -> how much this persona likes it
+
+    @property
+    def categories(self):
+        return set(self.weights.keys())
+
+    def choose_category(self, rng, categories, outlier_chance):
+        # Most of the time, buy from a category this persona likes.
+        # Sometimes (outlier_chance), buy something totally random instead -
+        # that's what makes a tech-enthusiast buy a banana once in a while.
+        if rng.random() < outlier_chance:
+            return rng.choice(categories), True
+
+        my_weights = {c: w for c, w in self.weights.items() if c in categories}
+        if not my_weights:
+            return rng.choice(categories), True
+
+        picked = rng.choices(list(my_weights.keys()), weights=list(my_weights.values()))[0]
+        return picked, False
+
+
+PERSONAS = [
+    Persona(
+        "tech-enthusiast",
+        avg_orders_per_year=14,
+        weights={
+            "laptops": 5,
+            "smartphones": 5,
+            "tablets": 4,
+            "mobile-accessories": 6,
+            "mens-watches": 1,
+            "sunglasses": 1,
+        },
+    ),
+    Persona(
+        "home-cook",
+        avg_orders_per_year=20,
+        weights={
+            "groceries": 8,
+            "kitchen-accessories": 6,
+            "home-decoration": 2,
+            "furniture": 1,
+        },
+    ),
+    Persona(
+        "family-shopper",
+        avg_orders_per_year=16,
+        weights={
+            "groceries": 6,
+            "kitchen-accessories": 3,
+            "home-decoration": 3,
+            "furniture": 2,
+            "sports-accessories": 2,
+            "tops": 1,
+        },
+    ),
+    Persona(
+        "fashion-forward",
+        avg_orders_per_year=11,
+        weights={
+            "womens-dresses": 4,
+            "womens-shoes": 3,
+            "womens-bags": 3,
+            "womens-jewellery": 2,
+            "womens-watches": 2,
+            "mens-shirts": 3,
+            "mens-shoes": 3,
+            "tops": 3,
+            "sunglasses": 2,
+            "fragrances": 2,
+        },
+    ),
+    Persona(
+        "fitness-outdoors",
+        avg_orders_per_year=9,
+        weights={
+            "sports-accessories": 7,
+            "motorcycle": 2,
+            "vehicle": 1,
+            "mens-shoes": 2,
+            "womens-shoes": 2,
+            "groceries": 2,
+        },
+    ),
+    Persona(
+        "beauty-selfcare",
+        avg_orders_per_year=13,
+        weights={
+            "beauty": 5,
+            "skin-care": 5,
+            "fragrances": 3,
+            "womens-jewellery": 1,
+            "sunglasses": 1,
+        },
+    ),
+    Persona(
+        "budget-generalist",
+        avg_orders_per_year=7,
+        weights={
+            "groceries": 4,
+            "kitchen-accessories": 2,
+            "mens-shirts": 1,
+            "tops": 1,
+            "home-decoration": 1,
+            "mobile-accessories": 1,
+            "sports-accessories": 1,
+        },
+    ),
+]
+
+PERSONAS_BY_NAME = {persona.name: persona for persona in PERSONAS}
+
+
+def is_outlier_purchase(persona_name, category):
+    persona = PERSONAS_BY_NAME.get(persona_name)
+    if not persona:
+        return True
+    return category not in persona.categories
 
 
 def predict_persona(category_counts):
     # category_counts: {category slug: how many of that a shopper has
     # bought}. Picks whichever persona's usual categories cover the most
     # of what they've actually bought - a simple "best fit" guess, not
-    # anything fancier. Falls back to the first persona if nothing
-    # matches (e.g. a brand new account with no orders yet).
-    best_persona = PERSONAS[0]
+    # anything fancier.
+    best_persona = PERSONAS[0].name
     best_score = -1
-    for persona, categories in PERSONA_CATEGORIES.items():
-        score = sum(count for category, count in category_counts.items() if category in categories)
+    for persona in PERSONAS:
+        score = sum(count for category, count in category_counts.items() if category in persona.categories)
         if score > best_score:
             best_score = score
-            best_persona = persona
+            best_persona = persona.name
     return best_persona
 
 
-LOCATIONS = [
-    ("New York", "NY", 40.7128, -74.0060),
-    ("Los Angeles", "CA", 34.0522, -118.2437),
-    ("Chicago", "IL", 41.8781, -87.6298),
-    ("Houston", "TX", 29.7604, -95.3698),
-    ("Phoenix", "AZ", 33.4484, -112.0740),
-    ("Philadelphia", "PA", 39.9526, -75.1652),
-    ("San Antonio", "TX", 29.4241, -98.4936),
-    ("San Diego", "CA", 32.7157, -117.1611),
-    ("Dallas", "TX", 32.7767, -96.7970),
-    ("Austin", "TX", 30.2672, -97.7431),
-    ("Seattle", "WA", 47.6062, -122.3321),
-    ("Denver", "CO", 39.7392, -104.9903),
-    ("Boston", "MA", 42.3601, -71.0589),
-    ("Atlanta", "GA", 33.7490, -84.3880),
-    ("Miami", "FL", 25.7617, -80.1918),
-    ("Portland", "OR", 45.5152, -122.6784),
-    ("Minneapolis", "MN", 44.9778, -93.2650),
-    ("Detroit", "MI", 42.3314, -83.0458),
-]
-
-
 def initial_profile():
-    city, region, lat, lng = random.choice(LOCATIONS)
+    location = random.choice(LOCATIONS)
     return {
         "persona": None,
-        "city": city,
-        "region": region,
-        "lat": lat,
-        "lng": lng,
+        "city": location.city,
+        "region": location.region,
+        "lat": location.lat,
+        "lng": location.lng,
     }

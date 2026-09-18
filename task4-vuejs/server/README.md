@@ -15,10 +15,10 @@ pip install -r requirements.txt
 python run.py     # sets up the database, adds fake /metrics data, then starts the server
 ```
 
-That runs `seed.py`, `../analytics/generate.py`, and `app.py` in order. You
-can still run any of those three on their own too - useful if you just
-want to reset the database (`seed.py`) or restart the server without
-regenerating the fake data (`app.py`).
+That runs `seed.py`, `generate_fake_shoppers.py`, and `app.py` in order.
+You can still run any of those three on their own too - useful if you
+just want to reset the database (`seed.py`) or restart the server
+without regenerating the fake data (`app.py`).
 
 `tekkiech.db` and `venv/` are gitignored - they get created locally, not committed.
 
@@ -72,9 +72,32 @@ fine since this is all throwaway dev data.
 `schema.dbml` is just a diagram of the tables for reference - it doesn't
 update itself, so change it by hand too if you touch `models.py`.
 
-The `synthetic_*` tables you'll see in `tekkiech.db` aren't part of
-`models.py` - they're the fake `/metrics` data, created separately by
-`analytics/generate.py`. See `analytics/README.md`.
+## Fake shoppers (for /metrics)
+
+`generate_fake_shoppers.py` makes up 18 months of order history for a
+batch of fake shoppers, so the `/metrics` dashboard has something to
+chart. It reads the real products already in the database (through the
+same SQLAlchemy models as everything else - no separate script, no raw
+SQL, no second copy of the persona/category logic) and writes the fake
+shoppers into their own tables: `synthetic_shopper`, `synthetic_order`,
+`synthetic_order_line` (see `models.py`). Kept apart from the real
+`user`/`order`/`order_item` tables so a fake shopper never mixes in
+with a real account.
+
+```bash
+python generate_fake_shoppers.py                       # writes 60 shoppers, 18 months
+python generate_fake_shoppers.py --seed 7 --users 100 --months 24
+```
+
+Each fake shopper gets a random name (`names.py`), a persona
+(`shopper_profile.py` - `tech-enthusiast`, `home-cook`, etc, each with
+category weights and roughly how many orders a year), and a home city
+with real coordinates (`locations.py`). Most purchases match the
+persona, but there's an 8% chance of buying something totally
+unrelated, so the data doesn't look too clean. Orders also lean toward
+November/December, so there's an actual holiday bump in the charts
+instead of flat noise. Re-running it replaces the old fake data rather
+than piling up on top of it.
 
 ## Real accounts on /metrics
 
@@ -82,9 +105,10 @@ Every account gets a random home city at signup (`shopper_profile.py`),
 but no persona yet - that starts out `None` until their first order.
 After every order, the persona gets (re)computed from that account's
 full purchase history - whichever persona's usual categories cover the
-most of what they've actually bought wins (`predict_persona`). A
-purchase outside the current persona's usual categories gets flagged
-as an "unexpected purchase," same as the fake shoppers.
+most of what they've actually bought wins (`predict_persona`, the same
+`Persona` class the fake shoppers use). A purchase outside the current
+persona's usual categories gets flagged as an "unexpected purchase,"
+same as the fake shoppers.
 
 `GET /api/metrics/orders` blends real orders in with the fake shopper
 data, and signed-in admins can pick "Just me" in the persona filter to

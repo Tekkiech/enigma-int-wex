@@ -8,8 +8,8 @@ from decimal import Decimal
 
 from flask import Flask, jsonify, request, session
 from flask_cors import CORS
-from sqlalchemy import func, select, text
-from sqlalchemy.orm import selectinload
+from sqlalchemy import func, select
+from sqlalchemy.orm import aliased, selectinload
 
 from auth import (
     admin_required,
@@ -22,7 +22,20 @@ from auth import (
     verify_login,
 )
 from database import SessionLocal, engine
-from models import Base, CartItem, Category, Order, OrderItem, Product, ProductReview, User, WishlistItem
+from models import (
+    Base,
+    CartItem,
+    Category,
+    Order,
+    OrderItem,
+    Product,
+    ProductReview,
+    SyntheticOrder,
+    SyntheticOrderLine,
+    SyntheticShopper,
+    User,
+    WishlistItem,
+)
 from shopper_profile import initial_profile, is_outlier_purchase, predict_persona
 
 app = Flask(__name__)
@@ -226,6 +239,22 @@ def get_product(product_id):
 FREQUENTLY_BOUGHT_TOGETHER_LIMIT = 4
 
 
+def co_purchase_counts(db, line_model, product_id):
+    # Counts how often each other product shows up in the same order as
+    # product_id. line_model is either OrderItem (real orders) or
+    # SyntheticOrderLine (fake shoppers) - same shape, same query either
+    # way, just joined to itself on order_id.
+    this_line = aliased(line_model)
+    other_line = aliased(line_model)
+    rows = db.execute(
+        select(other_line.product_id, func.count(func.distinct(this_line.order_id)))
+        .join(other_line, other_line.order_id == this_line.order_id)
+        .where(this_line.product_id == product_id, other_line.product_id != product_id)
+        .group_by(other_line.product_id)
+    ).all()
+    return rows
+
+
 @app.get("/api/products/<int:product_id>/frequently-bought-together")
 def frequently_bought_together(product_id):
     # Counts how often other products show up in the same order as this
@@ -235,40 +264,10 @@ def frequently_bought_together(product_id):
     with SessionLocal() as db:
         counts = Counter()
 
-        real_rows = db.execute(
-            text(
-                """
-                SELECT other.product_id AS product_id, COUNT(DISTINCT this.order_id) AS times
-                FROM order_item this
-                JOIN order_item other ON other.order_id = this.order_id AND other.product_id != this.product_id
-                WHERE this.product_id = :product_id
-                GROUP BY other.product_id
-                """
-            ),
-            {"product_id": product_id},
-        ).all()
-        for other_id, times in real_rows:
+        for other_id, times in co_purchase_counts(db, OrderItem, product_id):
             counts[other_id] += times
-
-        synthetic_table_exists = db.scalar(
-            text("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'synthetic_order_line'")
-        )
-        if synthetic_table_exists:
-            synthetic_rows = db.execute(
-                text(
-                    """
-                    SELECT other.product_id AS product_id, COUNT(DISTINCT this.order_id) AS times
-                    FROM synthetic_order_line this
-                    JOIN synthetic_order_line other
-                        ON other.order_id = this.order_id AND other.product_id != this.product_id
-                    WHERE this.product_id = :product_id
-                    GROUP BY other.product_id
-                    """
-                ),
-                {"product_id": product_id},
-            ).all()
-            for other_id, times in synthetic_rows:
-                counts[other_id] += times
+        for other_id, times in co_purchase_counts(db, SyntheticOrderLine, product_id):
+            counts[other_id] += times
 
         top_ids = [pid for pid, _times in counts.most_common(FREQUENTLY_BOUGHT_TOGETHER_LIMIT)]
         if not top_ids:
@@ -491,6 +490,10 @@ def list_orders():
 
 
 def metrics_row(row, is_outlier):
+    # Converted to a plain float here (not just at the very end) so
+    # lineTotal below is never computed from a Decimal - jsonify() can't
+    # serialize those.
+    price = num(row["price"])
     return {
         "orderId": row["order_id"],
         "date": row["date"],
@@ -504,74 +507,95 @@ def metrics_row(row, is_outlier):
         "productId": row["product_id"],
         "title": row["title"],
         "category": row["category"],
-        "price": num(row["price"]),
+        "price": price,
         "quantity": row["quantity"],
-        "lineTotal": round(row["price"] * row["quantity"], 2),
+        "lineTotal": round(price * row["quantity"], 2),
         "isOutlier": is_outlier,
     }
+
+
+def real_order_rows(db):
+    # order_id and shopper_id both get a "real-" prefix so they never
+    # collide with the synthetic "so-N" order ids or plain-integer
+    # synthetic_shopper ids below - the frontend needs unique ids to
+    # tell "my own orders" apart from a fake shopper's. Only accounts
+    # that have actually bought something (persona isn't None) show up.
+    rows = db.execute(
+        select(
+            Order.id.label("order_id"),
+            Order.created_at.label("date"),
+            User.id.label("shopper_id"),
+            func.coalesce(User.name, User.email).label("shopper_name"),
+            User.persona.label("persona"),
+            User.city.label("city"),
+            User.region.label("region"),
+            User.lat.label("lat"),
+            User.lng.label("lng"),
+            Product.id.label("product_id"),
+            Product.title.label("title"),
+            Category.slug.label("category"),
+            OrderItem.unit_price.label("price"),
+            OrderItem.quantity.label("quantity"),
+        )
+        .select_from(OrderItem)
+        .join(Order, OrderItem.order_id == Order.id)
+        .join(User, Order.user_id == User.id)
+        .join(Product, OrderItem.product_id == Product.id)
+        .join(Category, Product.category_id == Category.id)
+        .where(User.persona.is_not(None))
+    ).mappings().all()
+
+    for row in rows:
+        record = dict(row)
+        record["order_id"] = f"real-{record['order_id']}"
+        record["shopper_id"] = f"real-{record['shopper_id']}"
+        record["date"] = record["date"].date().isoformat()
+        yield metrics_row(record, is_outlier=is_outlier_purchase(record["persona"], record["category"]))
+
+
+def synthetic_order_rows(db):
+    rows = db.execute(
+        select(
+            SyntheticOrder.id.label("order_id"),
+            SyntheticOrder.order_date.label("date"),
+            SyntheticShopper.id.label("shopper_id"),
+            SyntheticShopper.name.label("shopper_name"),
+            SyntheticShopper.persona.label("persona"),
+            SyntheticShopper.city.label("city"),
+            SyntheticShopper.region.label("region"),
+            SyntheticShopper.lat.label("lat"),
+            SyntheticShopper.lng.label("lng"),
+            Product.id.label("product_id"),
+            Product.title.label("title"),
+            Category.slug.label("category"),
+            Product.price.label("price"),
+            SyntheticOrderLine.quantity.label("quantity"),
+            SyntheticOrderLine.is_outlier.label("is_outlier"),
+        )
+        .select_from(SyntheticOrderLine)
+        .join(SyntheticOrder, SyntheticOrderLine.order_id == SyntheticOrder.id)
+        .join(SyntheticShopper, SyntheticOrder.shopper_id == SyntheticShopper.id)
+        .join(Product, SyntheticOrderLine.product_id == Product.id)
+        .join(Category, Product.category_id == Category.id)
+    ).mappings().all()
+
+    for row in rows:
+        record = dict(row)
+        record["date"] = record["date"].isoformat()
+        yield metrics_row(record, is_outlier=record["is_outlier"])
 
 
 @app.get("/api/metrics/orders")
 @admin_required
 def metrics_orders():
-    # Feeds the /metrics page: the fake shoppers from analytics/generate.py,
-    # plus every real order from a signed-up account (each account gets a
-    # random persona/city at signup - see shopper_profile.py - just so
-    # their orders have somewhere to show up on these charts too).
+    # Feeds the /metrics page: the fake shoppers from
+    # generate_fake_shoppers.py, plus every real order from a signed-up
+    # account that's actually bought something (each account gets a
+    # random home city at signup, and a persona once they place their
+    # first order - see shopper_profile.py - so their orders have
+    # somewhere to show up on these charts too).
     with SessionLocal() as db:
-        records = []
-
-        # order_id and shopper_id both get a "real-" prefix so they never
-        # collide with the synthetic "so-N" order ids or plain-integer
-        # synthetic_shopper ids below - the frontend needs unique ids to
-        # tell "my own orders" apart from a fake shopper's.
-        real_rows = db.execute(
-            text(
-                """
-                SELECT
-                    'real-' || o.id AS order_id, date(o.created_at) AS date,
-                    'real-' || u.id AS shopper_id, COALESCE(u.name, u.email) AS shopper_name, u.persona AS persona,
-                    u.city AS city, u.region AS region, u.lat AS lat, u.lng AS lng,
-                    p.id AS product_id, p.title AS title, c.slug AS category, i.unit_price AS price,
-                    i.quantity AS quantity
-                FROM order_item i
-                JOIN "order" o ON i.order_id = o.id
-                JOIN "user" u ON o.user_id = u.id
-                JOIN product p ON i.product_id = p.id
-                JOIN category c ON p.category_id = c.id
-                WHERE u.persona IS NOT NULL
-                """
-            )
-        ).mappings().all()
-        records += [
-            metrics_row(row, is_outlier=is_outlier_purchase(row["persona"], row["category"])) for row in real_rows
-        ]
-
-        # The synthetic_* tables only exist once analytics/generate.py has
-        # been run - skip them instead of erroring out if it hasn't.
-        synthetic_table_exists = db.scalar(
-            text("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'synthetic_order_line'")
-        )
-        if synthetic_table_exists:
-            synthetic_rows = db.execute(
-                text(
-                    """
-                    SELECT
-                        o.id AS order_id, o.order_date AS date,
-                        s.id AS shopper_id, s.name AS shopper_name, s.persona AS persona,
-                        s.city AS city, s.region AS region, s.lat AS lat, s.lng AS lng,
-                        p.id AS product_id, p.title AS title, c.slug AS category, p.price AS price,
-                        l.quantity AS quantity, l.is_outlier AS is_outlier
-                    FROM synthetic_order_line l
-                    JOIN synthetic_order o ON l.order_id = o.id
-                    JOIN synthetic_shopper s ON o.shopper_id = s.id
-                    JOIN product p ON l.product_id = p.id
-                    JOIN category c ON p.category_id = c.id
-                    """
-                )
-            ).mappings().all()
-            records += [metrics_row(row, is_outlier=bool(row["is_outlier"])) for row in synthetic_rows]
-
+        records = list(real_order_rows(db)) + list(synthetic_order_rows(db))
         return jsonify(records)
 
 

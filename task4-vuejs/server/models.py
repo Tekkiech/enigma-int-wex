@@ -3,7 +3,7 @@
 # Note: "order" is a reserved SQL word, but SQLAlchemy handles that for us
 # automatically, so it's not something we need to worry about.
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 
 from sqlalchemy import ForeignKey, Numeric, UniqueConstraint
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
@@ -172,4 +172,53 @@ class OrderItem(Base):
     quantity: Mapped[int] = mapped_column(nullable=False, default=1)
 
     order: Mapped["Order"] = relationship(back_populates="items")
+    product: Mapped["Product"] = relationship()
+
+
+# Fake shoppers for the /metrics dashboard (see generate_fake_shoppers.py).
+# Their own tables, kept apart from the real user/order/order_item ones
+# above so a fake shopper never mixes in with a real account.
+
+
+class SyntheticShopper(Base):
+    __tablename__ = "synthetic_shopper"
+
+    # id is picked by generate_fake_shoppers.py, not auto-generated.
+    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=False)
+    name: Mapped[str] = mapped_column(nullable=False)
+    persona: Mapped[str] = mapped_column(nullable=False)
+    city: Mapped[str] = mapped_column(nullable=False)
+    region: Mapped[str] = mapped_column(nullable=False)
+    lat: Mapped[float] = mapped_column(nullable=False)
+    lng: Mapped[float] = mapped_column(nullable=False)
+
+    orders: Mapped[list["SyntheticOrder"]] = relationship(back_populates="shopper", cascade="all, delete-orphan")
+
+
+class SyntheticOrder(Base):
+    __tablename__ = "synthetic_order"
+
+    # id looks like "so-1", "so-2", ... so it never collides with a real
+    # order's plain integer id once the two get blended together for
+    # /api/metrics/orders.
+    id: Mapped[str] = mapped_column(primary_key=True, autoincrement=False)
+    shopper_id: Mapped[int] = mapped_column(ForeignKey("synthetic_shopper.id"), nullable=False)
+    order_date: Mapped[date] = mapped_column(nullable=False)
+
+    shopper: Mapped["SyntheticShopper"] = relationship(back_populates="orders")
+    lines: Mapped[list["SyntheticOrderLine"]] = relationship(back_populates="order", cascade="all, delete-orphan")
+
+
+class SyntheticOrderLine(Base):
+    __tablename__ = "synthetic_order_line"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    order_id: Mapped[str] = mapped_column(ForeignKey("synthetic_order.id"), nullable=False)
+    product_id: Mapped[int] = mapped_column(ForeignKey("product.id"), nullable=False)
+    quantity: Mapped[int] = mapped_column(nullable=False)
+    # True when this persona bought outside their usual categories -
+    # see Persona.choose_category in shopper_profile.py.
+    is_outlier: Mapped[bool] = mapped_column(nullable=False, default=False)
+
+    order: Mapped["SyntheticOrder"] = relationship(back_populates="lines")
     product: Mapped["Product"] = relationship()

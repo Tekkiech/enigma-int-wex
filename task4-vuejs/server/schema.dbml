@@ -99,6 +99,30 @@ Table order_item {
   quantity   integer       [not null, default: 1]
 }
 
+Table synthetic_shopper {
+  id      integer [primary key, note: 'Picked by generate_fake_shoppers.py, not auto-generated']
+  name    varchar [not null]
+  persona varchar [not null]
+  city    varchar [not null]
+  region  varchar [not null]
+  lat     float   [not null]
+  lng     float   [not null]
+}
+
+Table synthetic_order {
+  id         varchar [primary key, note: 'Looks like "so-1" so it never collides with a real order id once blended together for /api/metrics/orders']
+  shopper_id integer [not null]
+  order_date date    [not null]
+}
+
+Table synthetic_order_line {
+  id         integer [primary key]
+  order_id   varchar [not null]
+  product_id integer [not null]
+  quantity   integer [not null]
+  is_outlier boolean [not null, default: false, note: 'True when bought outside the persona\'s usual categories - see Persona.choose_category']
+}
+
 Ref: product.category_id > category.id
 Ref: product_image.product_id > product.id [delete: cascade]
 Ref: product_tag.product_id > product.id [delete: cascade]
@@ -111,3 +135,6 @@ Ref: wishlist_item.product_id > product.id
 Ref: order.user_id > user.id
 Ref: order_item.order_id > order.id [delete: cascade]
 Ref: order_item.product_id > product.id
+Ref: synthetic_order.shopper_id > synthetic_shopper.id [delete: cascade]
+Ref: synthetic_order_line.order_id > synthetic_order.id [delete: cascade]
+Ref: synthetic_order_line.product_id > product.id

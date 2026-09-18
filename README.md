@@ -63,7 +63,7 @@ npm run build # production build
 
 **Live:** [enigmatask4-vuejs.vercel.app](https://enigmatask4-vuejs.vercel.app/)
 
-A [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) storefront called "Tekkiech.Market". Products, accounts, cart, and orders are all real, served by a [Flask](https://flask.palletsprojects.com/) API (`server/`) backed by SQLite, seeded once from [DummyJSON](https://dummyjson.com/). There's also a `/metrics` page with a Chart.js + Leaflet dashboard built from fake shopper data (`analytics/`).
+A [Vue 3](https://vuejs.org/) + [Pinia](https://pinia.vuejs.org/) storefront called "Tekkiech.Market". Products, accounts, cart, and orders are all real, served by a [Flask](https://flask.palletsprojects.com/) + SQLAlchemy API (`server/`) backed by SQLite, seeded once from [DummyJSON](https://dummyjson.com/). There's also a `/metrics` page with a Chart.js + Leaflet dashboard built from fake shopper data.
 
 This one needs the API and the frontend running at once.
 
