@@ -49,6 +49,10 @@ async function submitLogIn() {
 function formatDate(iso) {
   return new Date(iso).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' });
 }
+
+function humanize(slug) {
+  return slug.replace(/-/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 </script>
 
 <template>
@@ -74,7 +78,20 @@ function formatDate(iso) {
             <dt>Saved</dt>
             <dd>{{ catalog.savedProducts.length }} items</dd>
           </div>
+          <div v-if="account.user.persona">
+            <dt>Shopper type</dt>
+            <dd>{{ humanize(account.user.persona) }}</dd>
+          </div>
+          <div v-if="account.user.city">
+            <dt>Home city</dt>
+            <dd>{{ account.user.city }}, {{ account.user.region }}</dd>
+          </div>
         </dl>
+
+        <p v-if="account.user.persona" class="account-card__since">
+          Picked randomly when you signed up - it's what groups your orders on the
+          <router-link to="/metrics">shopper metrics</router-link> dashboard. Pick "Just me" there to see only your own orders.
+        </p>
 
         <button type="button" class="button button--outline" @click="account.signOut">Sign out</button>
       </div>

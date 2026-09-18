@@ -8,8 +8,10 @@ export function personaList(records) {
   return [...new Set(records.map((r) => r.persona))].sort();
 }
 
-export function filterByPersona(records, persona) {
-  return persona === 'all' ? records : records.filter((r) => r.persona === persona);
+export function filterByPersona(records, persona, myUserId) {
+  if (persona === 'all') return records;
+  if (persona === 'me') return records.filter((r) => r.userId === myUserId);
+  return records.filter((r) => r.persona === persona);
 }
 
 export function computeKpis(records) {

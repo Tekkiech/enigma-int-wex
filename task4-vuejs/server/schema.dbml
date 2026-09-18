@@ -53,6 +53,11 @@ Table user {
   created_at             timestamp [default: `now()`]
   failed_login_attempts  integer   [not null, default: 0]
   locked_until           timestamp [note: 'Set for the duration of a lockout after too many failed logins, null otherwise']
+  persona                varchar   [note: 'Random, picked at signup - just so real orders show up on /metrics next to the fake shoppers']
+  city                   varchar
+  region                 varchar
+  lat                    float
+  lng                    float
 }
 
 Table cart_item {

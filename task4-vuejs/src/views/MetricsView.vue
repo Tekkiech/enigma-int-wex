@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import Breadcrumbs from '../components/common/Breadcrumbs.vue';
 import LoadingState from '../components/common/LoadingState.vue';
 import ErrorState from '../components/common/ErrorState.vue';
@@ -9,6 +9,7 @@ import DataTable from '../components/metrics/DataTable.vue';
 import LineChart from '../components/metrics/LineChart.vue';
 import BarChart from '../components/metrics/BarChart.vue';
 import LocationMap from '../components/metrics/LocationMap.vue';
+import useAccountStore from '../stores/account.vue';
 import * as backend from '../api/backend.js';
 import {
   personaList,
@@ -40,6 +41,9 @@ async function load() {
 
 onMounted(load);
 
+const account = useAccountStore();
+const myUserId = computed(() => (account.user ? `real-${account.user.id}` : null));
+
 const personaFilter = ref('all');
 const personas = computed(() => personaList(records.value));
 
@@ -47,7 +51,16 @@ const personas = computed(() => personaList(records.value));
 // the same color no matter how the bars get sorted.
 const personaColor = computed(() => Object.fromEntries(personas.value.map((name, i) => [name, CATEGORICAL[i]])));
 
-const filtered = computed(() => filterByPersona(records.value, personaFilter.value));
+// If you sign out while "Just me" is selected, there's nothing left to
+// show - fall back to "All personas" instead of an empty dashboard.
+watch(
+  () => account.user,
+  (user) => {
+    if (!user && personaFilter.value === 'me') personaFilter.value = 'all';
+  }
+);
+
+const filtered = computed(() => filterByPersona(records.value, personaFilter.value, myUserId.value));
 const kpis = computed(() => computeKpis(filtered.value));
 const months = computed(() => monthlySeries(filtered.value, records.value));
 const categories = computed(() => categoryBreakdown(filtered.value));
@@ -81,9 +94,10 @@ function formatDate(iso) {
     <template v-else>
       <div class="metrics-filter">
         <label class="metrics-filter__label">
-          <span>Shopper persona</span>
+          <span>Filter</span>
           <select v-model="personaFilter">
             <option value="all">All personas</option>
+            <option v-if="account.user" value="me">Just me</option>
             <option v-for="p in personas" :key="p" :value="p">{{ humanize(p) }}</option>
           </select>
         </label>

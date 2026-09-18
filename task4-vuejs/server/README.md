@@ -69,3 +69,15 @@ update itself, so change it by hand too if you touch `models.py`.
 The `synthetic_*` tables you'll see in `tekkiech.db` aren't part of
 `models.py` - they're the fake `/metrics` data, created separately by
 `analytics/generate.py`. See `analytics/README.md`.
+
+## Real accounts on /metrics
+
+Every account gets a random persona and home city the moment it signs up
+(`shopper_profile.py`) - it's not shown anywhere on the site, it just
+means a real account's real orders show up on the `/metrics` dashboard
+alongside the fake shoppers, instead of only fake data ever appearing
+there. `GET /api/metrics/orders` blends both together.
+
+Signed-in users can also pick "Just me" in the persona filter to see
+only their own orders. Real orders are never marked as outliers, so
+they won't show up in the "Unexpected purchases" table.

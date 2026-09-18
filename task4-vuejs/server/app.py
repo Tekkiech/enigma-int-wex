@@ -21,6 +21,7 @@ from auth import (
 )
 from database import SessionLocal, engine
 from models import Base, CartItem, Category, Order, OrderItem, Product, ProductReview, User, WishlistItem
+from shopper_profile import random_profile
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
@@ -39,6 +40,17 @@ def product_load_options(relationship=None):
     if relationship is None:
         return [selectinload(attr) for attr in attrs]
     return [selectinload(relationship).selectinload(attr) for attr in attrs]
+
+
+def user_to_dict(user):
+    return {
+        "id": user.id,
+        "name": user.name,
+        "email": user.email,
+        "persona": user.persona,
+        "city": user.city,
+        "region": user.region,
+    }
 
 
 def product_to_dict(product):
@@ -112,11 +124,11 @@ def signup():
     with SessionLocal() as db:
         if db.scalar(select(User).where(User.email == email)):
             return jsonify(error="An account with that email already exists."), 409
-        user = User(name=name or None, email=email, password_hash=hash_password(password))
+        user = User(name=name or None, email=email, password_hash=hash_password(password), **random_profile())
         db.add(user)
         db.commit()
         session["user_id"] = user.id
-        return jsonify(id=user.id, name=user.name, email=user.email), 201
+        return jsonify(user_to_dict(user)), 201
 
 
 @app.post("/api/auth/login")
@@ -140,7 +152,7 @@ def login():
             register_successful_login(user)
             db.commit()
             session["user_id"] = user.id
-            return jsonify(id=user.id, name=user.name, email=user.email)
+            return jsonify(user_to_dict(user))
 
         return jsonify(error="Invalid email or password."), 401
 
@@ -159,7 +171,7 @@ def me():
         if not user:
             session.clear()
             return jsonify(error="Not signed in."), 401
-        return jsonify(id=user.id, name=user.name, email=user.email)
+        return jsonify(user_to_dict(user))
 
 
 # --- catalog (public, read-only) -----------------------------------------
@@ -396,59 +408,86 @@ def list_orders():
 # --- metrics (synthetic dashboard data, public, read-only) ----------------
 
 
+def metrics_row(row, is_outlier):
+    return {
+        "orderId": row["order_id"],
+        "date": row["date"],
+        "userId": row["shopper_id"],
+        "shopperName": row["shopper_name"],
+        "persona": row["persona"],
+        "city": row["city"],
+        "region": row["region"],
+        "lat": row["lat"],
+        "lng": row["lng"],
+        "productId": row["product_id"],
+        "title": row["title"],
+        "category": row["category"],
+        "price": num(row["price"]),
+        "quantity": row["quantity"],
+        "lineTotal": round(row["price"] * row["quantity"], 2),
+        "isOutlier": is_outlier,
+    }
+
+
 @app.get("/api/metrics/orders")
 def metrics_orders():
-    # Feeds the /metrics page. The synthetic_* tables only exist once
-    # analytics/generate.py has been run - if it hasn't, just send back
-    # an empty list instead of erroring out.
+    # Feeds the /metrics page: the fake shoppers from analytics/generate.py,
+    # plus every real order from a signed-up account (each account gets a
+    # random persona/city at signup - see shopper_profile.py - just so
+    # their orders have somewhere to show up on these charts too).
     with SessionLocal() as db:
-        exists = db.scalar(
-            text("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'synthetic_order_line'")
-        )
-        if not exists:
-            return jsonify([])
+        records = []
 
-        rows = db.execute(
+        # order_id and shopper_id both get a "real-" prefix so they never
+        # collide with the synthetic "so-N" order ids or plain-integer
+        # synthetic_shopper ids below - the frontend needs unique ids to
+        # tell "my own orders" apart from a fake shopper's.
+        real_rows = db.execute(
             text(
                 """
                 SELECT
-                    o.id AS order_id, o.order_date AS date,
-                    s.id AS shopper_id, s.name AS shopper_name, s.persona AS persona,
-                    s.city AS city, s.region AS region, s.lat AS lat, s.lng AS lng,
-                    p.id AS product_id, p.title AS title, c.slug AS category, p.price AS price,
-                    l.quantity AS quantity, l.is_outlier AS is_outlier
-                FROM synthetic_order_line l
-                JOIN synthetic_order o ON l.order_id = o.id
-                JOIN synthetic_shopper s ON o.shopper_id = s.id
-                JOIN product p ON l.product_id = p.id
+                    'real-' || o.id AS order_id, date(o.created_at) AS date,
+                    'real-' || u.id AS shopper_id, COALESCE(u.name, u.email) AS shopper_name, u.persona AS persona,
+                    u.city AS city, u.region AS region, u.lat AS lat, u.lng AS lng,
+                    p.id AS product_id, p.title AS title, c.slug AS category, i.unit_price AS price,
+                    i.quantity AS quantity
+                FROM order_item i
+                JOIN "order" o ON i.order_id = o.id
+                JOIN "user" u ON o.user_id = u.id
+                JOIN product p ON i.product_id = p.id
                 JOIN category c ON p.category_id = c.id
+                WHERE u.persona IS NOT NULL
                 """
             )
         ).mappings().all()
+        records += [metrics_row(row, is_outlier=False) for row in real_rows]
 
-        return jsonify(
-            [
-                {
-                    "orderId": row["order_id"],
-                    "date": row["date"],
-                    "userId": row["shopper_id"],
-                    "shopperName": row["shopper_name"],
-                    "persona": row["persona"],
-                    "city": row["city"],
-                    "region": row["region"],
-                    "lat": row["lat"],
-                    "lng": row["lng"],
-                    "productId": row["product_id"],
-                    "title": row["title"],
-                    "category": row["category"],
-                    "price": num(row["price"]),
-                    "quantity": row["quantity"],
-                    "lineTotal": round(row["price"] * row["quantity"], 2),
-                    "isOutlier": bool(row["is_outlier"]),
-                }
-                for row in rows
-            ]
+        # The synthetic_* tables only exist once analytics/generate.py has
+        # been run - skip them instead of erroring out if it hasn't.
+        synthetic_table_exists = db.scalar(
+            text("SELECT 1 FROM sqlite_master WHERE type = 'table' AND name = 'synthetic_order_line'")
         )
+        if synthetic_table_exists:
+            synthetic_rows = db.execute(
+                text(
+                    """
+                    SELECT
+                        o.id AS order_id, o.order_date AS date,
+                        s.id AS shopper_id, s.name AS shopper_name, s.persona AS persona,
+                        s.city AS city, s.region AS region, s.lat AS lat, s.lng AS lng,
+                        p.id AS product_id, p.title AS title, c.slug AS category, p.price AS price,
+                        l.quantity AS quantity, l.is_outlier AS is_outlier
+                    FROM synthetic_order_line l
+                    JOIN synthetic_order o ON l.order_id = o.id
+                    JOIN synthetic_shopper s ON o.shopper_id = s.id
+                    JOIN product p ON l.product_id = p.id
+                    JOIN category c ON p.category_id = c.id
+                    """
+                )
+            ).mappings().all()
+            records += [metrics_row(row, is_outlier=bool(row["is_outlier"])) for row in synthetic_rows]
+
+        return jsonify(records)
 
 
 if __name__ == "__main__":

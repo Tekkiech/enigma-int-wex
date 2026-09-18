@@ -101,6 +101,15 @@ class User(Base):
     failed_login_attempts: Mapped[int] = mapped_column(nullable=False, default=0)
     locked_until: Mapped[datetime | None] = mapped_column(default=None)
 
+    # Random, picked once at signup (see shopper_profile.py) - just so this
+    # account's real orders can show up on the /metrics dashboard next to
+    # the fake shoppers. Not shown anywhere else on the site.
+    persona: Mapped[str | None] = mapped_column(default=None)
+    city: Mapped[str | None] = mapped_column(default=None)
+    region: Mapped[str | None] = mapped_column(default=None)
+    lat: Mapped[float | None] = mapped_column(default=None)
+    lng: Mapped[float | None] = mapped_column(default=None)
+
     cart_items: Mapped[list["CartItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     wishlist_items: Mapped[list["WishlistItem"]] = relationship(back_populates="user", cascade="all, delete-orphan")
     orders: Mapped[list["Order"]] = relationship(back_populates="user")
