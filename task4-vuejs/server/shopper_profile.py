@@ -1,13 +1,14 @@
-# Every new account gets a random persona and home city, so their real
-# orders can show up on the /metrics dashboard next to the fake
-# shoppers. The persona doesn't limit what a real account can actually
-# buy - but /api/metrics/orders checks a purchase's category against
-# PERSONA_CATEGORIES to flag it as an "unexpected purchase" when it's
-# outside what that persona normally buys, the same way the fake
-# shoppers work. Same persona names, categories, and cities as
-# analytics/generate.py uses, kept as a separate (simpler) copy here
-# since this file doesn't need the category weights, just which
-# categories count as "normal" for each persona.
+# Every new account gets a random persona and home city at signup, just
+# as a starting guess - see predict_persona() below for how it gets
+# updated once they've actually bought something. The persona doesn't
+# limit what a real account can buy - but /api/metrics/orders checks a
+# purchase's category against PERSONA_CATEGORIES to flag it as an
+# "unexpected purchase" when it's outside what that persona normally
+# buys, the same way the fake shoppers work. Same persona names,
+# categories, and cities as analytics/generate.py uses, kept as a
+# separate (simpler) copy here since this file doesn't need the
+# category weights, just which categories count as "normal" for each
+# persona.
 
 import random
 
@@ -52,6 +53,22 @@ PERSONAS = list(PERSONA_CATEGORIES.keys())
 
 def is_outlier_purchase(persona, category):
     return category not in PERSONA_CATEGORIES.get(persona, set())
+
+
+def predict_persona(category_counts):
+    # category_counts: {category slug: how many of that a shopper has
+    # bought}. Picks whichever persona's usual categories cover the most
+    # of what they've actually bought - a simple "best fit" guess, not
+    # anything fancier. Falls back to the first persona if nothing
+    # matches (e.g. a brand new account with no orders yet).
+    best_persona = PERSONAS[0]
+    best_score = -1
+    for persona, categories in PERSONA_CATEGORIES.items():
+        score = sum(count for category, count in category_counts.items() if category in categories)
+        if score > best_score:
+            best_score = score
+            best_persona = persona
+    return best_persona
 
 LOCATIONS = [
     ("New York", "NY", 40.7128, -74.0060),

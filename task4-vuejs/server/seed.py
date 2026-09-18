@@ -1,7 +1,8 @@
 # Downloads all the products from DummyJSON and saves them to our own
 # database, so the app never has to call DummyJSON again after this.
-# Safe to run more than once - it updates existing products instead of
-# duplicating them.
+# Also makes sure the admin account exists. Safe to run more than once -
+# it updates existing products instead of duplicating them, and won't
+# touch the admin account if it's already there.
 #
 #   python seed.py
 
@@ -11,10 +12,15 @@ from datetime import datetime, timezone
 import requests
 from sqlalchemy import select
 
+from auth import hash_password
 from database import SessionLocal, engine
-from models import Base, Category, Product, ProductImage, ProductReview, ProductTag
+from models import Base, Category, Product, ProductImage, ProductReview, ProductTag, User
+from shopper_profile import random_profile
 
 DUMMYJSON_URL = "https://dummyjson.com/products?limit=0"
+
+ADMIN_EMAIL = "admin@gmail.com"
+ADMIN_PASSWORD = "admin1234"
 
 
 def humanize_slug(slug):
@@ -88,9 +94,26 @@ def seed():
         print(f"Seeded {len(categories_by_slug)} categories and {len(products)} products.")
 
 
+def ensure_admin_account():
+    with SessionLocal() as db:
+        if db.scalar(select(User).where(User.email == ADMIN_EMAIL)):
+            return
+        admin = User(
+            name="Admin",
+            email=ADMIN_EMAIL,
+            password_hash=hash_password(ADMIN_PASSWORD),
+            is_admin=True,
+            **random_profile(),
+        )
+        db.add(admin)
+        db.commit()
+        print(f"Created admin account: {ADMIN_EMAIL}")
+
+
 if __name__ == "__main__":
     try:
         seed()
     except requests.RequestException as exc:
         print(f"Failed to fetch DummyJSON: {exc}", file=sys.stderr)
         sys.exit(1)
+    ensure_admin_account()

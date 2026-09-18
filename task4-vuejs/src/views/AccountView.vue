@@ -78,19 +78,22 @@ function humanize(slug) {
             <dt>Saved</dt>
             <dd>{{ catalog.savedProducts.length }} items</dd>
           </div>
-          <div v-if="account.user.persona">
-            <dt>Shopper type</dt>
-            <dd>{{ humanize(account.user.persona) }}</dd>
-          </div>
-          <div v-if="account.user.city">
-            <dt>Home city</dt>
-            <dd>{{ account.user.city }}, {{ account.user.region }}</dd>
-          </div>
+          <template v-if="account.user.isAdmin">
+            <div v-if="account.user.persona">
+              <dt>Shopper type</dt>
+              <dd>{{ humanize(account.user.persona) }}</dd>
+            </div>
+            <div v-if="account.user.city">
+              <dt>Home city</dt>
+              <dd>{{ account.user.city }}, {{ account.user.region }}</dd>
+            </div>
+          </template>
         </dl>
 
-        <p v-if="account.user.persona" class="account-card__since">
-          Picked randomly when you signed up - it's what groups your orders on the
-          <router-link to="/metrics">shopper metrics</router-link> dashboard. Pick "Just me" there to see only your own orders.
+        <p v-if="account.user.isAdmin && account.user.persona" class="account-card__since">
+          A random guess at signup, then updated after every order to match what you actually buy most.
+          It's what groups your orders on the <router-link to="/metrics">shopper metrics</router-link>
+          dashboard - pick "Just me" there to see only your own orders.
         </p>
 
         <button type="button" class="button button--outline" @click="account.signOut">Sign out</button>

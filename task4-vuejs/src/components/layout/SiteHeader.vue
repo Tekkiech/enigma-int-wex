@@ -2,8 +2,10 @@
 import { ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import useCatalogStore from '../../stores/catalog.vue';
+import useAccountStore from '../../stores/account.vue';
 
 const catalog = useCatalogStore();
+const account = useAccountStore();
 const route = useRoute();
 const router = useRouter();
 
@@ -38,7 +40,7 @@ watch(
       <nav class="site-header__nav">
         <RouterLink to="/">Home</RouterLink>
         <RouterLink to="/deals">Deals</RouterLink>
-        <RouterLink to="/metrics">Metrics</RouterLink>
+        <RouterLink v-if="account.user?.isAdmin" to="/metrics">Metrics</RouterLink>
         <RouterLink to="/support">Support</RouterLink>
         <RouterLink to="/account">Account</RouterLink>
       </nav>

@@ -1,5 +1,5 @@
 # Password hashing, password rules for signup, login lockout, and the
-# @login_required decorator.
+# @login_required / @admin_required decorators.
 
 import re
 from datetime import datetime, timedelta, timezone
@@ -7,6 +7,9 @@ from functools import wraps
 
 import bcrypt
 from flask import jsonify, session
+
+from database import SessionLocal
+from models import User
 
 MIN_PASSWORD_LENGTH = 8
 LOCKOUT_THRESHOLD = 5  # failed attempts before a lockout kicks in
@@ -76,6 +79,20 @@ def login_required(view):
     def wrapped(*args, **kwargs):
         if "user_id" not in session:
             return jsonify(error="Not signed in."), 401
+        return view(*args, **kwargs)
+
+    return wrapped
+
+
+def admin_required(view):
+    @wraps(view)
+    def wrapped(*args, **kwargs):
+        if "user_id" not in session:
+            return jsonify(error="Not signed in."), 401
+        with SessionLocal() as db:
+            user = db.get(User, session["user_id"])
+            if not user or not user.is_admin:
+                return jsonify(error="Admins only."), 403
         return view(*args, **kwargs)
 
     return wrapped

@@ -35,6 +35,11 @@ minutes after 5 wrong attempts in a row.
 Set `SECRET_KEY` (env var) to something real before deploying anywhere -
 the default is only fine for messing around locally.
 
+`python seed.py` (or `run.py`, which calls it) also creates an admin
+account if one doesn't exist yet: `admin@gmail.com` / `admin1234`. Admin
+is just a regular account with `is_admin` set - it's the only one that
+can see `/metrics` and its own shopper profile.
+
 ## Routes
 
 | Method | Path | Needs login? |
@@ -55,7 +60,7 @@ the default is only fine for messing around locally.
 | DELETE | `/api/wishlist/:productId` | yes |
 | POST | `/api/orders` | yes |
 | GET | `/api/orders` | yes |
-| GET | `/api/metrics/orders` | no |
+| GET | `/api/metrics/orders` | admin |
 
 ## Changing the schema
 
@@ -72,12 +77,17 @@ The `synthetic_*` tables you'll see in `tekkiech.db` aren't part of
 
 ## Real accounts on /metrics
 
-Every account gets a random persona and home city the moment it signs up
-(`shopper_profile.py`) - it's not shown anywhere on the site, it just
-means a real account's real orders show up on the `/metrics` dashboard
-alongside the fake shoppers, instead of only fake data ever appearing
-there. `GET /api/metrics/orders` blends both together.
+Every account gets a random persona and home city at signup
+(`shopper_profile.py`) as a starting guess. After every order, the
+persona gets recomputed from that account's full purchase history -
+whichever persona's usual categories cover the most of what they've
+actually bought wins (`predict_persona`). A purchase outside the
+current persona's usual categories gets flagged as an "unexpected
+purchase," same as the fake shoppers.
 
-Signed-in users can also pick "Just me" in the persona filter to see
-only their own orders. Real orders are never marked as outliers, so
-they won't show up in the "Unexpected purchases" table.
+`GET /api/metrics/orders` blends real orders in with the fake shopper
+data, and signed-in admins can pick "Just me" in the persona filter to
+see only their own orders.
+
+Only admin accounts can reach `/metrics` or see their own persona/city
+on the Account page - see "Auth" above for the admin login.

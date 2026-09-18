@@ -11,6 +11,7 @@ from sqlalchemy import func, select, text
 from sqlalchemy.orm import selectinload
 
 from auth import (
+    admin_required,
     hash_password,
     lockout_seconds_remaining,
     login_required,
@@ -21,7 +22,7 @@ from auth import (
 )
 from database import SessionLocal, engine
 from models import Base, CartItem, Category, Order, OrderItem, Product, ProductReview, User, WishlistItem
-from shopper_profile import is_outlier_purchase, random_profile
+from shopper_profile import is_outlier_purchase, predict_persona, random_profile
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "dev-only-change-me")
@@ -47,6 +48,7 @@ def user_to_dict(user):
         "id": user.id,
         "name": user.name,
         "email": user.email,
+        "isAdmin": user.is_admin,
         "persona": user.persona,
         "city": user.city,
         "region": user.region,
@@ -380,6 +382,24 @@ def place_order():
             db.delete(item)
         db.add(order)
         db.commit()
+
+        # Now that this order is part of their history, re-guess their
+        # persona from everything they've bought so far (see
+        # predict_persona in shopper_profile.py).
+        category_counts = dict(
+            db.execute(
+                select(Category.slug, func.sum(OrderItem.quantity))
+                .join(Product, OrderItem.product_id == Product.id)
+                .join(Category, Product.category_id == Category.id)
+                .join(Order, OrderItem.order_id == Order.id)
+                .where(Order.user_id == session["user_id"])
+                .group_by(Category.slug)
+            ).all()
+        )
+        user = db.get(User, session["user_id"])
+        user.persona = predict_persona(category_counts)
+        db.commit()
+
         db.refresh(order, attribute_names=["items"])
         for item in order.items:
             db.refresh(item, attribute_names=["product"])
@@ -405,7 +425,7 @@ def list_orders():
         return jsonify([order_to_dict(order) for order in orders])
 
 
-# --- metrics (synthetic dashboard data, public, read-only) ----------------
+# --- metrics (admin-only dashboard data) ------------------------------------
 
 
 def metrics_row(row, is_outlier):
@@ -430,6 +450,7 @@ def metrics_row(row, is_outlier):
 
 
 @app.get("/api/metrics/orders")
+@admin_required
 def metrics_orders():
     # Feeds the /metrics page: the fake shoppers from analytics/generate.py,
     # plus every real order from a signed-up account (each account gets a
