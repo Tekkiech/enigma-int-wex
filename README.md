@@ -69,7 +69,7 @@ This one needs the API and the frontend running at once.
 
 ```bash
 cd task4-vuejs/server
-python3 -m venv venv && source venv/bin/activate
+python3 -m venv venv && source venv/bin/activate       # Windows: venv\Scripts\activate
 pip install -r requirements.txt
 python run.py     # sets up the database, adds fake /metrics data, then runs on http://localhost:5000
 ```
